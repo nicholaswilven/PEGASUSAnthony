@@ -1,6 +1,7 @@
 from convert_to_records import convert_parquet_to_records
 import tensorflow as tf
 
+'''
 # Model specific parameters
 tf.flags.DEFINE_string("data_dir", "",
                        "Path to directory containing the MNIST dataset")
@@ -24,7 +25,7 @@ def train_input_fn(params):
           tf.contrib.data.batch_and_drop_remainder(batch_size))
   images, labels = ds.make_one_shot_iterator().get_next()
   return images, labels
-
+'''
 
 if __name__=="__main__":
     #FLAGS
