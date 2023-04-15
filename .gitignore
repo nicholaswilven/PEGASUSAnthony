@@ -1,0 +1,6 @@
+venv
+data
+records
+tokenizer
+.env
+__pycache__
