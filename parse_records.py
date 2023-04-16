@@ -1,6 +1,8 @@
 import tensorflow as tf 
 import glob
 import os
+from dotenv import load_dotenv
+load_dotenv()
 MODEL_MAX_LENGTH = int(os.getenv("MODEL_MAX_LENGTH"))
 MAX_SUMMARY_LENGTH = int(os.getenv("MODEL_SUMMARY_LENGTH"))
 
