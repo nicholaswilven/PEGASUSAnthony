@@ -5,21 +5,24 @@ import re
 import nltk
 import random
 import os
+
+# Load Environment Variables from .env
 from dotenv import load_dotenv
 load_dotenv()
 GSG_RATE = float(os.getenv("GSG_RATE"))
 RETURN_MASK_RATE = float(os.getenv("RETURN_MASK_RATE"))
 
-def _e_gap_sentence_generation(examples, GSG_RATE = GSG_RATE, RETURN_MASK_RATE = RETURN_MASK_RATE):
-    """Function to prepare features for E_GSG task
-    Arguments:
-    list of text: ["Pegasus is mythical . It is pure white . it names the model ."]
-    GGS_RATE: Percentage of sentence masked in input using top ROUGE F1 score
-    RETURN_MASK_RATE: Choosen sentence are not masked in input, set 0 for regular GSG
-    Returns:
-    result :  A dictionary with 2 keys
-    input : ["Pegasus is mythical . <mask_1> it names the model ."]
-    labels :  ["It is pure white . </s>"] for <mask_1>
+def _E_GSG(examples, GSG_RATE = GSG_RATE, RETURN_MASK_RATE = RETURN_MASK_RATE):
+    """Function to prepare features for Extractive Gap Sentece Generation task
+    Args:
+        examples: A dictionary of list articles (example for one article input)
+            text : ["Pegasus is mythical . It is pure white . it names the model ."])        
+        GGS_RATE: Percentage of sentence masked in input using top ROUGE F1 score
+        RETURN_MASK_RATE: Choosen sentence are not masked in input, set 0 for regular GSG
+    Outputs:
+        result :  A dictionary of list masked article (input) and list pseudo-summary (labels)
+            input : ["Pegasus is mythical . <mask_1> it names the model ."]
+            labels : ["It is pure white . </s>"] for <mask_1>
     """
 
     result = {}

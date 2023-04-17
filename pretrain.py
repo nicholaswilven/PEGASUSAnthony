@@ -29,4 +29,4 @@ def train_input_fn(params):
 
 if __name__=="__main__":
     #FLAGS
-    convert_parquet_to_records()
+    convert_parquet_to_records(mode='finetune',num_file = 521)

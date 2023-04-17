@@ -1,27 +1,35 @@
 from transformers import PegasusTokenizerFast,PegasusTokenizer
 import sentencepiece as spm
 import os
+import tensorflow as tf
+
+# Load Environment Variables from .env
 from dotenv import load_dotenv
 load_dotenv()
 MODEL_MAX_LENGTH = int(os.getenv("MODEL_MAX_LENGTH"))
 MAX_SUMMARY_LENGTH = int(os.getenv("MAX_SUMMARY_LENGTH"))
 path_to_tokenizer_fast = os.getenv("path_to_tokenizer_fast")
 path_to_tokenizer_slow = os.getenv("path_to_tokenizer_slow")
+tokenizer_type = os.getenv("tokenizer_type")
 
-def init_tokenizer_fast(path_to_tokenizer = path_to_tokenizer_fast , MODEL_MAX_LENGTH = MODEL_MAX_LENGTH):
-    tokenizer = PegasusTokenizerFast(
-                vocab_file = f"{path_to_tokenizer}.model",
+def fetch_tokenizer(tokenizer_type = tokenizer_type):
+    """ Generate tokenizer based on type and default path on .env
+    Args: 
+        tokenizer_type = 'BPE' for default tokenizeror 'Unigram' for fast tokenizer
+    Outputs: PegasusTokenizer object
+    """
+    if tokenizer_type == "Unigram":
+        tokenizer = PegasusTokenizerFast(
+                vocab_file = f"{path_to_tokenizer_fast}.model",
+                model_max_length = MODEL_MAX_LENGTH
+                )
+    else:
+        tokenizer = PegasusTokenizer(
+                vocab_file = f"{path_to_tokenizer_slow}.model",
                 model_max_length = MODEL_MAX_LENGTH
                 )
     return tokenizer
-
-def init_tokenizer_slow(path_to_tokenizer = path_to_tokenizer_slow, MODEL_MAX_LENGTH = MODEL_MAX_LENGTH):
-    tokenizer = PegasusTokenizer(
-                vocab_file = f"{path_to_tokenizer}.model",
-                model_max_length = MODEL_MAX_LENGTH
-                )
-    return tokenizer
-
+    
 def _tokenize_inputs(examples, tokenizer, MODEL_MAX_LENGTH = MODEL_MAX_LENGTH, MAX_SUMMARY_LENGTH = MAX_SUMMARY_LENGTH):
         """Function to tokenize inputs
         Arguments:
@@ -70,21 +78,35 @@ def _tokenize_inputs(examples, tokenizer, MODEL_MAX_LENGTH = MODEL_MAX_LENGTH, M
             truncation = True
             ).input_ids
         
-        return {'input_ids': input_ids,
-                'attention_mask': attention_mask,
-                'decoder_input_ids':decoder_input_ids,
-                'labels':tokenized_labels}
+        return {'input_ids' : input_ids,
+                'attention_mask' : attention_mask,
+                'decoder_input_ids' : decoder_input_ids,
+                'labels' : tokenized_labels}
+
+tf.compat.v1.flags.DEFINE_string("input", "training_tokenizer.txt",
+                       "Path to txt file for trainign tokenizer")
+
+tf.compat.v1.flags.DEFINE_string("model_prefix", "PegasusAnthony_final_64k", "Resulting file name")
+
+tf.compat.v1.flags.DEFINE_bool("enable_predict", True, "Do some predictions at the end")
+tf.compat.v1.flags.DEFINE_integer("vocab_size", 64000, "Number of vocab in tokenizer")
+
+FLAGS = tf.compat.v1.flags.FLAGS
 
 if __name__=="__main__":
-    # FLAGS !!!
+    # Run to train the tokenizer
+
     input_file = 'training_tokenizer.txt',
     model_prefix = "PegasusAnthony_final_64k", 
     vocab_size = 64000,
     model_type = "unigram"
-
+    input_sentence_size = 800000
     spm.SentencePieceTrainer.Train(
-        input_file = input_file,
+        input = input_file,
         model_prefix = model_prefix,
         vocab_size = vocab_size,
-        model_type = model_type
+        model_type = model_type,
+        input_sentence_size = input_sentence_size,
+        shuffle_input_sentence = True,
+        train_extremely_large_corpus = True
         )
