@@ -1,4 +1,4 @@
-from transformers import PegasusTokenizerFast,PegasusTokenizer
+from transformers import PegasusTokenizerFast, PegasusTokenizer
 import sentencepiece as spm
 import os
 import tensorflow as tf

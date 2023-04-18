@@ -4,8 +4,9 @@ import os
 # Load Environment Variables from .env
 from dotenv import load_dotenv
 load_dotenv()
+GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
 MODEL_MAX_LENGTH = int(os.getenv("MODEL_MAX_LENGTH"))
-MAX_SUMMARY_LENGTH = int(os.getenv("MODEL_SUMMARY_LENGTH"))
+MAX_SUMMARY_LENGTH = int(os.getenv("MAX_SUMMARY_LENGTH"))
 
 def parse_tfr_element(element, MODEL_MAX_LENGTH = MODEL_MAX_LENGTH, MAX_SUMMARY_LENGTH = MAX_SUMMARY_LENGTH):
     """Parse TFRecords element, structure same as serializing
@@ -37,7 +38,8 @@ def parse_tfr_element(element, MODEL_MAX_LENGTH = MODEL_MAX_LENGTH, MAX_SUMMARY_
     return {'input_ids' :feature1,'attention_mask':feature2,'decoder_input_ids':feature3, 'labels':label}
 
 def get_dataset(tfr_dir: str = f"gs://{GCS_BUCKET_NAME}/records/fulldata",
-                pattern: str = "pretrain_{}.tfrecord",
+                pattern: str = "{}_{}.tfrecord",
+                mode = "pretrain",
                 num_files = 276):
     """Get dataset from list of tfrecord filename
     Args:
@@ -47,7 +49,7 @@ def get_dataset(tfr_dir: str = f"gs://{GCS_BUCKET_NAME}/records/fulldata",
     Output:
         tf.dataset from tfrecord files"""
         
-    files = [os.path.join(tfr_dir, pattern.format(idx)) for idx in range(num_files)]
+    files = [os.path.join(tfr_dir, pattern.format(mode,idx)) for idx in range(num_files)]
     # create the dataset
     dataset = tf.data.TFRecordDataset(files)
 
@@ -57,3 +59,10 @@ def get_dataset(tfr_dir: str = f"gs://{GCS_BUCKET_NAME}/records/fulldata",
     )
 
     return dataset
+
+def get_dataset_partitions_tf(dataset, BATCH_SIZE, val_size = 320000, shuffle_size=1000):
+    dataset = dataset.shuffle(shuffle_size, seed=12, reshuffle_each_iteration=False)
+    val_dataset = dataset.take(val_size)    
+    train_dataset = dataset.skip(val_size)
+    tf_batch_shuffle = lambda ds : ds.shuffle(shuffle_size, seed=12).batch(BATCH_SIZE, drop_remainder=True).shuffle(shuffle_size, seed=12)
+    return tf_batch_shuffle(train_dataset), tf_batch_shuffle(val_dataset)
