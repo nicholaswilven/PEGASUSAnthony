@@ -29,12 +29,10 @@ def parse_tfr_element(element, MODEL_MAX_LENGTH = MODEL_MAX_LENGTH, MAX_SUMMARY_
     labels = content['labels']
 
     #get our feature and convert str to tensor
-    feature1 = tf.reshape(tf.io.decode_raw(input_ids, out_type=tf.int32) ,shape=(1,MODEL_MAX_LENGTH+3))[:,3:]
-    print(tf.shape(feature1))
-    
-    feature2 = tf.reshape(tf.io.decode_raw(attention_mask, out_type=tf.int32) ,shape=[1,MODEL_MAX_LENGTH+3])[:,3:]
-    feature3 = tf.reshape(tf.io.decode_raw(decoder_input_ids, out_type=tf.int32) ,shape=[1,MAX_SUMMARY_LENGTH+3])[:,3:]
-    label = tf.reshape(tf.io.decode_raw(labels, out_type=tf.int32) ,shape=[1,MAX_SUMMARY_LENGTH+3])[:,3:] # uint32 barely enough for 64k vocabs
+    feature1 = tf.squeeze(tf.reshape(tf.io.decode_raw(input_ids, out_type=tf.int32) ,shape=(1,MODEL_MAX_LENGTH+3))[:,3:])
+    feature2 = tf.squeeze(tf.reshape(tf.io.decode_raw(attention_mask, out_type=tf.int32) ,shape=[1,MODEL_MAX_LENGTH+3])[:,3:])
+    feature3 = tf.squeeze(tf.reshape(tf.io.decode_raw(decoder_input_ids, out_type=tf.int32) ,shape=[1,MAX_SUMMARY_LENGTH+3])[:,3:])
+    label = tf.squeeze(tf.reshape(tf.io.decode_raw(labels, out_type=tf.int32) ,shape=[1,MAX_SUMMARY_LENGTH+3])[:,3:]) # uint32 barely enough for 64k vocabs
     return {'input_ids' :feature1,'attention_mask':feature2,'decoder_input_ids':feature3, 'labels':label}
 
 def get_dataset(tfr_dir: str = f"gs://{GCS_BUCKET_NAME}/records/fulldata",
@@ -62,7 +60,6 @@ def get_dataset(tfr_dir: str = f"gs://{GCS_BUCKET_NAME}/records/fulldata",
 
 def get_dataset_partitions_tf(dataset, BATCH_SIZE, val_size = 320000, shuffle_size=1000):
     dataset = dataset.shuffle(shuffle_size, seed=12, reshuffle_each_iteration=False)
-    val_dataset = dataset.take(val_size)    
-    train_dataset = dataset.skip(val_size)
-    tf_batch_shuffle = lambda ds : ds.shuffle(shuffle_size, seed=12).batch(BATCH_SIZE, drop_remainder=True).shuffle(shuffle_size, seed=12)
-    return tf_batch_shuffle(train_dataset), tf_batch_shuffle(val_dataset)
+    val_dataset = dataset.take(val_size).shuffle(shuffle_size, seed=12).batch(BATCH_SIZE, drop_remainder=True).shuffle(shuffle_size, seed=12) 
+    train_dataset = dataset.skip(val_size).shuffle(shuffle_size, seed=12).batch(BATCH_SIZE, drop_remainder=True).shuffle(shuffle_size, seed=12)
+    return train_dataset,val_dataset

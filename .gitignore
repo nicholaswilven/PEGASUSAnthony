@@ -4,3 +4,5 @@ records
 tokenizer
 .env
 __pycache__
+logs
+script_log
