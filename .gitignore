@@ -5,4 +5,7 @@ tokenizer
 .env
 __pycache__
 logs
+tensorboard_logs
 script_log
+.sh
+.py

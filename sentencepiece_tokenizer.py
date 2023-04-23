@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 load_dotenv()
 MODEL_MAX_LENGTH = int(os.getenv("MODEL_MAX_LENGTH"))
 MAX_SUMMARY_LENGTH = int(os.getenv("MAX_SUMMARY_LENGTH"))
-path_to_tokenizer = os.getenv("path_to_tokenizer")
-tokenizer_type = os.getenv("tokenizer_type")
+PATH_TO_TOKENIZER = os.getenv("PATH_TO_TOKENIZER")
+TOKENIZER_TYPE = os.getenv("TOKENIZER_TYPE")
 
-def fetch_tokenizer(tokenizer_type = tokenizer_type, path_to_tokenizer = path_to_tokenizer):
+def fetch_tokenizer(tokenizer_type = TOKENIZER_TYPE, path_to_tokenizer = PATH_TO_TOKENIZER):
     """ Generate tokenizer based on type and default path on .env
     Args: 
         tokenizer_type = 'BPE' for default tokenizeror 'Unigram' for fast tokenizer
@@ -26,6 +26,8 @@ def fetch_tokenizer(tokenizer_type = tokenizer_type, path_to_tokenizer = path_to
                 vocab_file = f"{path_to_tokenizer}.model",
                 model_max_length = MODEL_MAX_LENGTH
                 )
+    special_tokens_dict = {'additional_special_tokens': ["<s>", "<pad>", "</s>", "<unk>", "<cls>", "<sep>", "<mask_1>","<mask_2>"]}
+    tokenizer.add_special_tokens(special_tokens_dict)
     return tokenizer
     
 def _tokenize_inputs(examples, tokenizer, MODEL_MAX_LENGTH = MODEL_MAX_LENGTH, MAX_SUMMARY_LENGTH = MAX_SUMMARY_LENGTH):
@@ -85,7 +87,7 @@ if __name__=="__main__":
     # Run to train the tokenizer
 
     input_file = 'training_tokenizer.txt',
-    model_prefix = "PegasusAnthony_final_64k", 
+    model_prefix = "PegasusAnthony_64k", 
     vocab_size = 64000,
     model_type = "unigram"
     input_sentence_size = 800000

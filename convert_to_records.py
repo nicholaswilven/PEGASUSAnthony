@@ -3,7 +3,7 @@ import nltk
 from math import ceil
 import pandas as pd
 import tensorflow as tf
-
+import json
 from sentencepiece_tokenizer import _tokenize_inputs, fetch_tokenizer
 from gap_sentence_generation import _E_GSG
 
@@ -13,6 +13,11 @@ load_dotenv()
 MODEL_MAX_LENGTH = int(os.getenv("MODEL_MAX_LENGTH"))
 MAX_SUMMARY_LENGTH = int(os.getenv("MAX_SUMMARY_LENGTH"))
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
+FINETUNE_NUM_FILES = os.getenv("FINETUNE_NUM_FILES")
+PRETRAIN_NUM_FILES = os.getenv("PRETRAIN_NUM_FILES")
+TFRECORD_FOLDER_NAME = os.getenv("TFRECORD_FOLDER_NAME")
+PRETRAIN_DATA_LIST = json.loads(os.environ['PRETRAIN_DATA_LIST'])
+FINETUNE_DATA_LIST = json.loads(os.environ['FINETUNE_DATA_LIST'])
 
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
@@ -79,31 +84,29 @@ def serialize_examples(dataset, tokenizer = fetch_tokenizer(), mode = "pretrain"
     del tf_dataset
     return serialized_tf_dataset
         
-def convert_parquet_to_records(mode = "pretrain",
-                                num_file = 276 ,
-                                prefix_dir: str = "data/pegasusanthony_fix",
-                                out_dir: str = f"gs://{GCS_BUCKET_NAME}/records/fulldata"
+def convert_parquet_to_records(mode,
+                                num_files = None,
+                                prefix_dir: str = f"gs://{GCS_BUCKET_NAME}/data",
+                                out_dir: str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER_NAME}",
+                                start_from = 0
                                 ):
     """ Runnable python function to convert parquet file to tfrecord files 
     Args:
         mode = 'pretrain' or 'finetune'. Specify which dataset to process
-        num_file = number of tfrecord files generated (each ~100MB)
+        num_files = number of tfrecord files generated (each ~100MB)
         prefix_dir = path to parquet files (slightly hardcoded)
         outdir_dir = path to tfrecord files
     """
     if mode == "pretrain":
-        filenames = [os.path.join(prefix_dir, f) 
-                     for f in ['ccnews-id.parquet.gzip',
-                               'id-wiki-clean.parquet',
-                               'news-2017-clean.parquet']
-                               ]
+        filenames = [os.path.join(prefix_dir, f) for f in PRETRAIN_DATA_LIST]
+        if num_files == None:
+            num_files = PRETRAIN_NUM_FILES
+
     elif mode == "finetune":
-        filenames = [os.path.join(prefix_dir, f) 
-                     for f in ["reddit-tldr.parquet.gzip",
-                               "liputan6.parquet",
-                               "gigaword.parquet",
-                               "indosum.parquet"]
-                               ]
+        filenames = [os.path.join(prefix_dir, f) for f in FINETUNE_DATA_LIST]
+        if num_files == None:
+            num_files = FINETUNE_NUM_FILES
+
     else:
         raise ValueError('Please specify the mode, "pretrain" or "finetune"')
     
@@ -112,25 +115,31 @@ def convert_parquet_to_records(mode = "pretrain",
     data = []
     for filename in filenames:
         df = pd.read_parquet(filename)
-        if filename == os.path.join(prefix_dir,"ccnews-id.parquet.gzip"):
-            df['sent'] = df['text'].apply(lambda x: len(nltk.tokenize.sent_tokenize(x)))
-            df = df[df['sent']>2]
-            df = df[['text']]
-            print("Preprocessed CC News!")
-        elif filename == os.path.join(prefix_dir,"gigaword.parquet"):
-            df.rename(columns={'summary':'labels','document':'input'},inplace=True)
         data.append(df)
         print(f"Read {filename} done")
-        print(df.head())
+        print(df.head(3))
         del df
-    df = pd.concat(data).reset_index(drop=True)
+    df = pd.concat(data).sample(frac=1, random_state=42).reset_index(drop=True)
     del data
     print(f"Total records : {len(df)}")
-    sample_per_file = ceil(len(df)/num_file)
-    for idx in range(273,num_file):
-        print(f"Printing file {idx} from {num_file}")
+    sample_per_file = ceil(len(df)/num_files)
+    for idx in range(start_from,num_files):
+        print(f"Printing file {idx} from {num_files}")
         writer = tf.data.experimental.TFRecordWriter(os.path.join(out_dir,f'{mode}_{idx}.tfrecord'))
         temp_df = df.iloc[idx*sample_per_file:(idx+1)*sample_per_file].to_dict(orient="list")
         serialized_tf_dataset = serialize_examples(temp_df, mode = mode)
-        writer.write(serialized_tf_dataset)       
+        writer.write(serialized_tf_dataset)     
+        print(f"Printing file {idx} DONE!")  
+
+# Parse sys args
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--start_from", help = "resume previous process", default = 0,
+                    type=int)
+parser.add_argument("--mode", help = "pretrain or finetune", default = "pretrain",
+                    type=str)
+args = parser.parse_args()
+
+if __name__ == '__main__':
+    convert_parquet_to_records(args.mode, args.start_from)
 
