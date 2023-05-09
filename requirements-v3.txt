@@ -125,7 +125,6 @@ tbb==2021.9.0
 tensorboard==2.12.1
 tensorboard-data-server==0.7.0
 tensorboard-plugin-wit==1.8.1
-tensorflow @ file:///tmp/tensorflow_pkg/tensorflow-2.12.0-cp310-cp310-linux_x86_64.whl
 tensorflow-estimator==2.12.0
 tensorflow-hub==0.13.0
 tensorflow-io-gcs-filesystem==0.32.0
