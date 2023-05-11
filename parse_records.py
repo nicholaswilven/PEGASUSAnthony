@@ -95,6 +95,6 @@ def get_dataset(tfr_dir: str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER
 
 def get_dataset_partitions_tf(dataset, BATCH_SIZE, val_size = 320000, shuffle_size=10000):
     # dataset = dataset.shuffle(shuffle_size, seed=12, reshuffle_each_iteration=False) #dataset already sampled at serialization
-    val_dataset = dataset.take(val_size).shuffle(shuffle_size, seed=12).batch(BATCH_SIZE, drop_remainder=True).shuffle(shuffle_size, seed=12) 
-    train_dataset = dataset.skip(val_size).shuffle(shuffle_size, seed=12).batch(BATCH_SIZE, drop_remainder=True).shuffle(shuffle_size, seed=12)
+    val_dataset = dataset.take(val_size).shuffle(shuffle_size).batch(BATCH_SIZE, drop_remainder=True).shuffle(shuffle_size) 
+    train_dataset = dataset.skip(val_size).shuffle(shuffle_size).batch(BATCH_SIZE, drop_remainder=True).shuffle(shuffle_size)
     return train_dataset, val_dataset

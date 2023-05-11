@@ -24,10 +24,11 @@ parser.add_argument("--exp_name", help = "experiment name, for checkpoint name",
 parser.add_argument("--mode", help = "pretrain or finetune", default = "pretrain", type=str)
 parser.add_argument("--num_files", help = "number of files used in training", type=int)
 parser.add_argument("--batch_size", help = "batch_size training", default = 128, type=int)
-parser.add_argument("--epochs", help = "epochs training", default = 40, type=int)
-parser.add_argument("--vocab_size", help = "vocab size model and tokenizer", default = 16103, type=int)
-parser.add_argument("--learning_rate", help = "learning rate training", default = 0.0005, type=float)
+parser.add_argument("--epochs", help = "epochs training", default = 20, type=int)
+parser.add_argument("--vocab_size", help = "vocab size model and tokenizer", default = 32103, type=int)
+parser.add_argument("--learning_rate", help = "learning rate training", default = 0.005, type=float)
 parser.add_argument("--load_ckpt_path", help = "path toload model weights", type=str)
+parser.add_argument("--from_pretrain", help = "alternative for training mode", type=bool)
 args = parser.parse_args()
 
 # Load Dataset
@@ -46,7 +47,13 @@ train_dataset, val_dataset = get_dataset_partitions_tf(dataset, args.batch_size,
 # Callbacks for Tensorboard, EarlyStopping and Checkpoint
 checkpoint_filepath = f"gs://{GCS_BUCKET_NAME}/checkpoints/{args.exp_name}/{args.mode}-"+"weights-{epoch:02d}-{val_loss:.3f}"
 
-model_callback = [
+def scheduler(epoch, lr):
+    if epoch < 5:
+        return lr
+    else:
+        return lr * tf.math.exp(-0.1)
+
+model_callback = [tf.keras.callbacks.LearningRateScheduler(scheduler),
     tf.keras.callbacks.TensorBoard(log_dir='./tensorboard_logs/'+args.exp_name),
     tf.keras.callbacks.EarlyStopping(
                     monitor = "val_accuracy",
@@ -76,23 +83,24 @@ tpu_strategy = tf.distribute.TPUStrategy(tpu)
 # This one is for tensorboard
 tf.profiler.experimental.server.start(6000)
 
-def scce_with_ls(y, y_hat):
-    y = tf.one_hot(tf.cast(y, tf.int32), args.vocab_size)
-    return tf.keras.losses.categorical_crossentropy(y, tf.add(y_hat,1e-10), label_smoothing = 0.1)
-
 with tpu_strategy.scope():
-    model = TFPegasusForConditionalGeneration(get_config(args.vocab_size))
+    if args.from_pretrain:
+        model = TFPegasusForConditionalGeneration.from_pretrained("google/pegasus-large")
+        # Train embedding layer only
+        model.layers[0].encoder.trainable = False
+        model.layers[0].decoder.trainable = False
+        model.layers[0].shared.trainable =  True
+
+        # Reinitialize embeddings
+        x = model.layers[0].shared.embeddings_initializer([96103,1024])
+        model.layers[0].shared.set_weights([x])
+    else:
+        model = TFPegasusForConditionalGeneration(get_config(args.vocab_size))
+    
     if args.load_ckpt_path != None:
         model.load_weights(args.load_ckpt_path)
 
-    # Check use label smooting loss or not
-    if args.label_smoothing:
-        model.compile(loss = scce_with_ls,
-            optimizer = tf.keras.optimizers.Adafactor(learning_rate = args.learning_rate),
-            metrics = ["accuracy"])
-    else:
-        model.compile(optimizer = tf.keras.optimizers.Adafactor(learning_rate = args.learning_rate),
-            metrics = ["accuracy"])
+    model.compile(optimizer = tf.keras.optimizers.Adafactor(learning_rate = args.learning_rate),metrics = ["accuracy"])
 
     print('Start training!')
     model.fit(train_dataset,
@@ -101,3 +109,7 @@ with tpu_strategy.scope():
         validation_data = val_dataset,
         callbacks = model_callback
         )
+    
+    if args.from_pretrain:
+        # save embedding layer only
+        np.save(exp_name+"_embedding_layer",model.layers[0].shared.get_weights()[0])

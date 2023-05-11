@@ -4,6 +4,7 @@ print("Tensorflow version " + tf.__version__)
 import os
 import re
 import unicodedata
+import json
 
 from parse_records import get_dataset, get_dataset_partitions_tf
 from transformers import TFPegasusForConditionalGeneration
@@ -56,7 +57,7 @@ def process_input_eval(text, tokenizer = tokenizer):
 # Parse sys args
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--vocab_size", help = "vocab size model and tokenizer", default = 16103, type=int)
+parser.add_argument("--vocab_size", help = "vocab size model and tokenizer", default = 32103, type=int)
 parser.add_argument("--load_ckpt_path", help = "path toload model weights", type=str)
 parser.add_argument("--input_text", help = "text to summarize", type=str)
 args = parser.parse_args()
@@ -67,22 +68,21 @@ tf.config.experimental_connect_to_cluster(tpu)
 tf.tpu.experimental.initialize_tpu_system(tpu)
 tpu_strategy = tf.distribute.TPUStrategy(tpu)
 
-# This one is for tensorboard
-tf.profiler.experimental.server.start(6000)
-
 # Hardcode for banning . in generation 
 if args.vocab_size == 16103:
     dot_ids = [[128], [106]]
 elif args.vocab_size == 32103:
-    dot_ids == [[127],[106]]
+    dot_ids = [[127],[106]]
+else:
+    dot_ids = None
 
 input_text = args.input_text
 if input_text == None: # Take random article from finetune dataset if not specified
     import pandas as pd
     import random
-    prefix_dir: str = f"gs://{GCS_BUCKET_NAME}/data",
+    prefix_dir = f"gs://{GCS_BUCKET_NAME}/data_new"
     filelist = [os.path.join(prefix_dir, f) for f in FINETUNE_DATA_LIST]
-    df = pd.read_parquet(filelist(random.randint(0,1)))
+    df = pd.read_parquet(filelist[random.randint(0,len(filelist)-1)])
     n = len(df)
     idx = random.randint(0,n-1)
     input_text = df.loc[idx,'input']
@@ -90,7 +90,9 @@ if input_text == None: # Take random article from finetune dataset if not specif
     print("gold:", df.loc[idx,'labels'])
 else:
     print("Article:", input_text)
-    
+
+t = process_input_eval(input_text)
+
 with tpu_strategy.scope():
     model = TFPegasusForConditionalGeneration(get_config(args.vocab_size))
     model.load_weights(args.load_ckpt_path)
@@ -101,13 +103,13 @@ with tpu_strategy.scope():
                         no_repeat_ngrams_size = 1,
                         temperature = 0.7,
                         top_p = 0.75,
-                        encoder_repetition_penalty = 2
-                        diversity_penalty = 0.1,
+                        #encoder_repetition_penalty = 2
+                        #diversity_penalty = 0.1,
                         num_return_sequences = 8,
                         bad_words_ids = dot_ids
                         )
 
-summary = token.batch_decode(x, skip_special_tokens=True)
+summary = tokenizer.batch_decode(x, skip_special_tokens=True)
 print("Summaries:")
 for sum in summary:
-    print(summary)
+    print(sum)
