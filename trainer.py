@@ -24,11 +24,12 @@ parser.add_argument("--exp_name", help = "experiment name, for checkpoint name",
 parser.add_argument("--mode", help = "pretrain or finetune", default = "pretrain", type=str)
 parser.add_argument("--num_files", help = "number of files used in training", type=int)
 parser.add_argument("--batch_size", help = "batch_size training", default = 128, type=int)
-parser.add_argument("--epochs", help = "epochs training", default = 20, type=int)
+parser.add_argument("--epochs", help = "epochs training", default = 40, type=int)
 parser.add_argument("--vocab_size", help = "vocab size model and tokenizer", default = 32103, type=int)
-parser.add_argument("--learning_rate", help = "learning rate training", default = 0.005, type=float)
+parser.add_argument("--learning_rate", help = "learning rate training", default = 0.0005, type=float)
 parser.add_argument("--load_ckpt_path", help = "path toload model weights", type=str)
-parser.add_argument("--from_pretrain", help = "alternative for training mode", type=bool)
+parser.add_argument("--from_pretrain", help = "alternative for training mode", default=False, type=bool)
+parser.add_argument("--learning_rate_decay", help = "scale exp(-lrd) for epoch > 2", default=0.15, type=float)
 args = parser.parse_args()
 
 # Load Dataset
@@ -40,18 +41,27 @@ if args.num_files == None:
 else:
     num_files = args.num_files
 
+# Mixed Datasets
+tfr_dir = f"gs://{GCS_BUCKET_NAME}"+"/records/{}/pretrain_{}.tfrecord"
+f1 = [tfr_dir.format("oscar_32k",idx) for idx in range(48)]
+f2 = [tfr_dir.format("news_32k",idx) for idx in range(144)]
+f3 = [tfr_dir.format("oscar_32k_trunc",idx) for idx in range(35)]
+f = f1+f2+f3
+import random
+random.shuffle(f)
 AUTO = tf.data.experimental.AUTOTUNE
-dataset = get_dataset(mode  = args.mode, num_files = num_files).prefetch(AUTO)
+dataset = get_dataset(files = f).prefetch(AUTO)
+
 train_dataset, val_dataset = get_dataset_partitions_tf(dataset, args.batch_size,val_size=32000)
 
-# Callbacks for Tensorboard, EarlyStopping and Checkpoint
-checkpoint_filepath = f"gs://{GCS_BUCKET_NAME}/checkpoints/{args.exp_name}/{args.mode}-"+"weights-{epoch:02d}-{val_loss:.3f}"
+# Callbacks for Learning rate decay, Tensorboard, EarlyStopping and Checkpoint
+checkpoint_filepath = f"gs://{GCS_BUCKET_NAME}/checkpoints/{args.exp_name}/{args.mode}-"+"weights-{epoch:02d}-{val_loss:.3f}-{val_accuracy:.3f}"
 
 def scheduler(epoch, lr):
-    if epoch < 5:
+    if epoch < 2:
         return lr
     else:
-        return lr * tf.math.exp(-0.1)
+        return lr * tf.math.exp(-1*args.learning_rate_decay)
 
 model_callback = [tf.keras.callbacks.LearningRateScheduler(scheduler),
     tf.keras.callbacks.TensorBoard(log_dir='./tensorboard_logs/'+args.exp_name),
