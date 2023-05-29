@@ -13,7 +13,7 @@ GSG_RATE = float(os.getenv("GSG_RATE"))
 RETURN_MASK_RATE = float(os.getenv("RETURN_MASK_RATE"))
 
 def _E_GSG(examples, GSG_RATE = GSG_RATE, RETURN_MASK_RATE = RETURN_MASK_RATE):
-    """Function to prepare features for Extractive Gap Sentece Generation task
+    """Function to prepare features for Extractive Gap Sentece Generation task, compatible with hf datasets mapping
     Args:
         examples: A dictionary of list articles (example for one article input)
             text : ["Pegasus is mythical . It is pure white . it names the model ."])        

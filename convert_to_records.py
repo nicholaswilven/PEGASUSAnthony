@@ -1,9 +1,12 @@
+import tensorflow as tf
+tf.random.set_seed(42)
 import os
 import nltk
 from math import ceil
 import pandas as pd
-import tensorflow as tf
 import json
+from datasets import load_dataset, concatenate_datasets
+
 from sentencepiece_tokenizer import _tokenize_inputs, fetch_tokenizer
 from gap_sentence_generation import _E_GSG
 from cleaning import cleaning_oscar
@@ -71,29 +74,26 @@ def serialize_examples(dataset, tokenizer = fetch_tokenizer(), mode = "pretrain"
         examples = dataset,
         tokenizer = tokenizer
         )
-    del dataset
     tf_dataset = tf.data.Dataset.from_tensor_slices((
         tokenized_df['input_ids'],
         tokenized_df['attention_mask'],
         tokenized_df['labels']
         ))
-    del tokenized_df
     serialized_tf_dataset = tf_dataset.map(tf_serialize)
-    del tf_dataset
     return serialized_tf_dataset
         
-def convert_parquet_to_records(mode,
-                                num_files = None,
-                                prefix_dir: str = f"gs://{GCS_BUCKET_NAME}/data",
-                                out_dir: str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER_NAME}",
-                                start_from = 0
-                                ):
+def convert_parquet_to_records(mode : str = pretrain,
+                               num_files = None,
+                               prefix_dir : str = f"gs://{GCS_BUCKET_NAME}/data",
+                               out_dir : str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER_NAME}",
+                               start_from : int = 0):
     """ Runnable python function to convert parquet file to tfrecord files 
     Args:
         mode = 'pretrain' or 'finetune'. Specify which dataset to process
-        num_files = number of tfrecord files generated (each ~100MB)
+        num_files = number of tfrecord files generated, each ~100MB
         prefix_dir = path to parquet files (slightly hardcoded)
-        outdir_dir = path to tfrecord files
+        out_dir = path for output TFRecord folder
+        start_from = helper params to continue if process terminated 
     """
     if mode == "pretrain":
         filenames = [os.path.join(prefix_dir, f) for f in PRETRAIN_DATA_LIST]
@@ -129,26 +129,42 @@ def convert_parquet_to_records(mode,
         writer.write(serialized_tf_dataset)     
         print(f"Printing file {idx} DONE!")  
 
-def convert_parqeut_ds_to_records( out_dir: str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER_NAME}",
-                                start_from = 0
-                                ):
-    # Tokenize dataset
-    prefix_dir: str = f"gs://pegasusanthony_fix/data_new"
+def convert_parqeut_ds_to_records(out_dir : str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER_NAME}",
+                                  prefix_dir: str = f"gs://{GCS_BUCKET_NAME}/data_new",
+                                  sample_per_file : int = 22400,
+                                  start_from : int = 0,
+                                  num_proc : int = 96):
+    """ Runnable python function to convert parquet file to tfrecord files via hf datasets, benefits from multiprocessing. Only for pretrain dataset with columns ['text']
+    Args:
+        out_dir = path for output TFRecord folder
+        prefix_dir = path to parquet files (slightly hardcoded)
+        sample_per_file = number of datapoints in one TFRecord file, each ~100MB
+        start_from = helper params to continue if process terminated 
+        num_proc = number of CPU cores/ workers available
+    """
+    # Load parquet file as datasets, combine into one
     filenames = [os.path.join(prefix_dir, f) for f in PRETRAIN_DATA_LIST]
-    from datasets import load_dataset, concatenate_datasets
-    dataset1 = load_dataset("parquet", data_files=filenames[0],split='train')
-    dataset1.remove_columns([col for col in dataset1.column_names if col != "text"])
-    dataset2 = load_dataset("parquet", data_files=filenames[1],split='train')
-    dataset2.remove_columns([col for col in dataset2.column_names if col != "text"])
-    dataset = concatenate_datasets([dataset1, dataset2])
+    frame = []
+    for filename in filenames:
+        ds = load_dataset("parquet", data_files=filename, split = 'train')
+        ds.remove_columns([col for col in ds.column_names if col != "text"])
+        frame.append(ds)
+    dataset = concatenate_datasets(frame)
     
+    # Apply gap sentence generation and tokenizing
     tokenizer = fetch_tokenizer()
-    processed_dataset = dataset.map(_E_GSG, batched=True, remove_columns=["text"], num_proc = 96)
-    processed_dataset = processed_dataset.filter(lambda example:example['input']!="SKIP", num_proc = 96)
-    tokenized_dataset = processed_dataset.map(lambda x : _tokenize_inputs(x, tokenizer = tokenizer), batched=True, remove_columns=["input"], num_proc = 96,load_from_cache_file=False)
+    processed_dataset = dataset.map(_E_GSG,
+                                    batched = True,
+                                    remove_columns = ["text"],
+                                    num_proc = num_proc)
+    processed_dataset = processed_dataset.filter(lambda example : example['input'] != "SKIP",
+                                                 num_proc = num_proc)
+    tokenized_dataset = processed_dataset.map(lambda x : _tokenize_inputs(x, tokenizer = tokenizer),
+                                              batched = True,
+                                              remove_columns = ["input"],
+                                              num_proc = num_proc,
+                                              load_from_cache_file = False)
     print(f"Total records : {len(tokenized_dataset)}")
-    # Parameters
-    sample_per_file = 22400
     num_files = ceil(len(tokenized_dataset)/sample_per_file)
     for idx in range(start_from,num_files):
         print(f"Printing file {idx} from {num_files}")
@@ -163,19 +179,44 @@ def convert_parqeut_ds_to_records( out_dir: str = f"gs://{GCS_BUCKET_NAME}/recor
         writer.write(serialized_tf_dataset)     
         print(f"Printing file {idx} DONE!") 
 
-def convert_dataset_to_records( out_dir: str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER_NAME}",
-                                start_from = 0
-                                ):
-    dataset = load_dataset("oscar-corpus/OSCAR-2201",use_auth_token=True, language="id", split="train")#.shard(num_shards=100000,index=3)
-    clean_dataset = dataset.map(cleaning_oscar, batched=True, remove_columns=["id","meta"],num_proc = 96, load_from_cache_file=False)
-    processed_dataset = clean_dataset.map(_E_GSG, batched=True, remove_columns=["text"], num_proc = 96, load_from_cache_file=False)
-    processed_dataset = processed_dataset.filter(lambda example:example['input']!="SKIP", num_proc = 96, load_from_cache_file=False)
+def convert_dataset_to_records(out_dir : str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER_NAME}",
+                               sample_per_file : int = 22400,
+                               start_from : int = 0,
+                              num_proc : int = 96):
+    """ Runnable python function to convert OSCAR corpus dataset to tfrecord files as pretrain dataset, benefits from multiprocessing.
+    Args:
+        out_dir = path for output TFRecord folder
+        sample_per_file = number of datapoints in one TFRecord file, each ~100MB
+        start_from = helper params to continue if process terminated 
+        num_proc = number of CPU cores/ workers available
+    """
+    dataset = load_dataset("oscar-corpus/OSCAR-2201",
+                           use_auth_token = True,
+                           language = "id",
+                           split = "train")
+    # Cleaning the dataset
+    clean_dataset = dataset.map(cleaning_oscar,
+                                batched = True,
+                                remove_columns = ["id","meta"],
+                                num_proc = 96,
+                                load_from_cache_file = False)
+    # Apply gap sentence generation and tokenizing
+    processed_dataset = clean_dataset.map(_E_GSG,
+                                          batched = True,
+                                          remove_columns = ["text"],
+                                          num_proc = 96,
+                                          load_from_cache_file = False)
+    processed_dataset = processed_dataset.filter(lambda example : example['input'] != "SKIP",
+                                                 num_proc = 96,
+                                                 load_from_cache_file=  False)
     # Tokenize dataset
     tokenizer = fetch_tokenizer()
-    tokenized_dataset = processed_dataset.map(lambda x : _tokenize_inputs(x, tokenizer = tokenizer), batched=True, remove_columns=["input"], num_proc = 96,load_from_cache_file=False)
+    tokenized_dataset = processed_dataset.map(lambda x : _tokenize_inputs(x, tokenizer = tokenizer),
+                                              batched = True,
+                                              remove_columns = ["input"],
+                                              num_proc = 96,
+                                              load_from_cache_file = False)
     print(f"Total records : {len(tokenized_dataset)}")
-    # Parameters
-    sample_per_file = 22400
     num_files = ceil(len(tokenized_dataset)/sample_per_file)
     for idx in range(start_from,num_files):
         print(f"Printing file {idx} from {num_files}")

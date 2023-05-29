@@ -10,7 +10,8 @@ MAX_SUMMARY_LENGTH = int(os.getenv("MAX_SUMMARY_LENGTH"))
 PATH_TO_TOKENIZER = os.getenv("PATH_TO_TOKENIZER")
 TOKENIZER_TYPE = os.getenv("TOKENIZER_TYPE")
 
-def fetch_tokenizer(tokenizer_type = TOKENIZER_TYPE, path_to_tokenizer = PATH_TO_TOKENIZER):
+def fetch_tokenizer(tokenizer_type : str = TOKENIZER_TYPE,
+                    path_to_tokenizer : str = PATH_TO_TOKENIZER):
     """ Generate tokenizer based on type and default path on .env
     Args: 
         tokenizer_type = 'BPE' for default tokenizeror 'Unigram' for fast tokenizer
@@ -26,12 +27,14 @@ def fetch_tokenizer(tokenizer_type = TOKENIZER_TYPE, path_to_tokenizer = PATH_TO
                 vocab_file = f"{path_to_tokenizer}.model",
                 model_max_length = MODEL_MAX_LENGTH
                 )
-    special_tokens_dict = {'additional_special_tokens': ["<s>", "<pad>", "</s>", "<unk>", "<cls>", "<sep>", "<mask_1>","<mask_2>"]}
     tokenizer.add_special_tokens(special_tokens_dict)
     return tokenizer
     
-def _tokenize_inputs(examples, tokenizer, MODEL_MAX_LENGTH = MODEL_MAX_LENGTH, MAX_SUMMARY_LENGTH = MAX_SUMMARY_LENGTH):
-        """Function to tokenize inputs
+def _tokenize_inputs(examples : dict,
+                     tokenizer,
+                     MODEL_MAX_LENGTH : int = MODEL_MAX_LENGTH,
+                     MAX_SUMMARY_LENGTH : int = MAX_SUMMARY_LENGTH):
+        """Function to tokenize inputs, compatible with hf datasets mapping
         Arguments:
         tokenizer: PegasusTokenizer
           examples : A dictionary with 2 keys
@@ -83,20 +86,3 @@ def _tokenize_inputs(examples, tokenizer, MODEL_MAX_LENGTH = MODEL_MAX_LENGTH, M
                 'decoder_input_ids' : decoder_input_ids,
                 'labels' : tokenized_labels}
 
-if __name__=="__main__":
-    # Run to train the tokenizer
-
-    input_file = 'training_tokenizer.txt',
-    model_prefix = "PegasusAnthony_64k", 
-    vocab_size = 64000,
-    model_type = "unigram"
-    input_sentence_size = 800000
-    spm.SentencePieceTrainer.Train(
-        input = input_file,
-        model_prefix = model_prefix,
-        vocab_size = vocab_size,
-        model_type = model_type,
-        input_sentence_size = input_sentence_size,
-        shuffle_input_sentence = True,
-        train_extremely_large_corpus = True
-        )

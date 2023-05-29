@@ -38,23 +38,8 @@ with tpu_strategy.scope():
 
 scorer = rouge_scorer.RougeScorer(['rouge1'])
 
-def abs_summary(input_text : str = "sampel artikel.",
-                idx : int = None,
-                num_beams : int = 8):
-    """ Sumamrize article (or from index dataset) using model specified in env. Called by FastAPI
-    Args:
-        input_text = article to summarize
-        idx = index dataset to summarize
-    Output:
-        result: Dictionary for 
-            input_text: article to summarize
-            gold: human written summary, only for summary from index dataset
-            summary_list:
-                summary : model generated summary
-                rouge1_f1 : ROUGE1 F1 score with gold, only for summary from index dataset
-    """
-    if idx != None:
-        input_text = df.iloc[idx]['input']
+for idx in range(len(df)):
+    input_text = df.iloc[idx]['input']
     t = process_input_eval(input_text)
     with tpu_strategy.scope():
         x = model.generate(**t,
@@ -70,26 +55,13 @@ def abs_summary(input_text : str = "sampel artikel.",
                             #encoder_repetition_penalty = 2,
                             #diversity_penalty = 0.1
                             )
-
     summary = tokenizer.batch_decode(x, skip_special_tokens=True)
-
-    result = {}
-    result['input_text'] = input_text
-    if idx != None:
-        gold = text_cleaning(df.iloc[idx]['labels'])
-        result['gold'] = gold
-        summary_list = []
-        for sum in summary:
-            obj = {}
-            obj['rouge1_f1'] = scorer.score(sum, gold)['rouge1'].fmeasure
-            obj['summary'] = sum
-            summary_list.append(obj)
-        result['result'] = summary_list
-    else:
-        summary_list = []
-        for sum in summary:
-            obj = {}
-            obj['summary'] = sum
-            summary_list.append(obj)
-        result['result'] = summary_list
-    return result
+    for sum in summary:
+        s = scorer.score(sum, text_cleaning(df.iloc[idx]['labels']))['rouge1'].fmeasure
+        if s > 0.2:
+            print('index:',idx)
+            print("Article:",input_text)
+            print("gold:",df.iloc[idx]['labels'])
+            print("summary:",sum)
+            print("ROUGE 1 F1:",s)
+            print('------------')

@@ -1,2 +1,2 @@
 #!/bin/sh
-python3 -u trainer.py --exp_name=base_oscar_gogogo > script_log/base_oscar_gogogo.txt
+python3 -u generate_iter.py --load_ckpt_path=gs://pegasusanthony_ext/checkpoints/base_oscar_gogogo_ulg_FT/finetune-weights-08-1.017-0.134 1> script_log/base22_result.txt 2> script_log/base22_result_error.txt

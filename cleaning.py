@@ -3,6 +3,7 @@ import unicodedata
 from sentencepiece_tokenizer import fetch_tokenizer
 
 def remove_news_headline(text,delim):
+    # Helper function to remove news headline (for example: JAKARTA, liputan6.com -- )
     x = text.split(delim)
     if len(x)>1: # buang yang bukan konten
         return " ".join(x[1:])
@@ -10,6 +11,8 @@ def remove_news_headline(text,delim):
         return x[0]
 
 def text_cleaning(input_string, is_news = True):
+    # Main function to clean text, removes link, bullet point, non ASCII char, news headline, parantheses,
+    # punctuation except "," and ".", numbers with dot (enumerating), extra whitespaces, too short sentences.
     lowercase = input_string.lower()
     # stripped_html = BeautifulSoup(lowercase, 'html.parser').get_text()
     remove_link = re.sub(r'(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w\.-]*)', '', lowercase).replace("&amp;","&")
@@ -27,7 +30,8 @@ def text_cleaning(input_string, is_news = True):
     remove_extra_whitespace =  re.sub(r'^\s*|\s\s*', ' ', remove_num_dot).strip()
     return ".".join([s for s in remove_extra_whitespace.strip().split('.') if len(s.strip())>10]).replace("_","")
 
-def process_input_eval(text, tokenizer = fetch_tokenizer()):
+def process_input_eval(text : str, tokenizer = fetch_tokenizer()):
+    # Prepare text for generation
     t = text_cleaning(text)
     return tokenizer(t,
               return_tensors = "tf",
@@ -37,8 +41,11 @@ def process_input_eval(text, tokenizer = fetch_tokenizer()):
               )
 
 def cleaning_oscar(examples):
+    # hf datasets mapping function to clean OSCAR corpus dataset
+    # 1. Takes only confident indonesian sentences (language label is "id")
+    # 2. Applies above text_cleaning function
+    # 3. Truncate articles to 500 words
     clean_article = []
-    
     L_article = [doc.split('\n') for doc in examples['text']]
     L_lang_iden = [doc['line_identifications'] for doc in examples['meta']]
     for k in range(len(L_article)):
@@ -46,15 +53,14 @@ def cleaning_oscar(examples):
         lang_iden = L_lang_iden[k]
         clean_text = []
         for i in range(len(article)):
-            if lang_iden[i]!= None:
-                if lang_iden[i]['label']=='id':
+            if lang_iden[i] != None:
+                if lang_iden[i]['label'] == 'id':
                     clean_text.append(article[i])
         text = text_cleaning("\n".join(clean_text))
         tokens = len(text.split())
-        if tokens>=500:
+        if tokens >= 500:
             text = " ".join(text.split()[:500])
-        else:
-            text = "SKIP" # can also skip this line is want to include the "short" articles
-
+        #else:
+        #    text = "SKIP" # can also skip this line is want to include the "short" articles
         clean_article.append(text)
     return {'text':clean_article}
