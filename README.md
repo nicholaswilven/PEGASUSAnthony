@@ -14,7 +14,7 @@ Finetune :
 2. [Liputan6](https://paperswithcode.com/dataset/liputan6)
 
 # Infrastructure setup
-1. Create TPU VM on GCP (TF version 2.12.0, preferable v3-8, free access from [TRC]([url](https://sites.research.google/trc/about/)) program)
+1. Create TPU VM on GCP (TF version 2.12.0, preferable v3-8, free access from [TRC](https://sites.research.google/trc/about/) program)
 2. Create GCS buckets on GCP
 
 # First time setup
