@@ -13,33 +13,33 @@ Finetune :
 1. [Indosum](https://paperswithcode.com/dataset/indosum)
 2. [Liputan6](https://paperswithcode.com/dataset/liputan6)
 
-# Infrastructure setup
+## Infrastructure setup
 1. Create TPU VM on GCP (TF version 2.12.0, preferable v3-8, free access from [TRC](https://sites.research.google/trc/about/) program)
 2. Create GCS buckets on GCP
 
-# First time setup
+## First time setup
 1. python -m venv venv
 2. pip install -r requirements.txt
 3. python setup.py (Install ntlk data)
 4. python tpu-test.py (Check TPU)
 
-# Prepare training dataset
+## Prepare training dataset
 0. Preprocess on all dataset notebook (except OSCAR)
 1. Upload to GCS bucket as parquet file
 2. Dump all text into one .txt file
 3. Train sentencepiece tokenizer using train_tokenizer.py
 4. Convert all training data to TFRecords using convert_to_records.py
 
-# Training model
+## Training model
 1. Specify model hyperparams on model.py, file directory and num_files on .env
 2. Run trainer.py
 
-# Running process in background (linux)
+## Running process in background (linux)
 0. Write "python trainer.py --exp_name=testing > script_log\testing.txt" (training command) on script.sh file
 1. bash chmod +x script.sh
 2. bash ./script.sh &
 
-# Deploy mini showcase using FastAPI
+## Deploy mini showcase using FastAPI
 1. Specify model checkpoint path and vocab_size on .env and model hyperparams on model.py
 2. bash uvicorn app:app
  
