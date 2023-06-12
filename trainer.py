@@ -18,7 +18,7 @@ load_dotenv()
 PRETRAIN_NUM_FILES = int(os.getenv("PRETRAIN_NUM_FILES"))
 FINETUNE_NUM_FILES = int(os.getenv("FINETUNE_NUM_FILES"))
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
-
+repo_name = os.getenv("SAVE_TO_REPO")
 # Parse sys args
 import argparse
 parser = argparse.ArgumentParser()
@@ -129,4 +129,4 @@ with tpu_strategy.scope():
         )
     
     if args.push_to_hub:
-        model.push_to_hub("thonyyy")
+        model.push_to_hub(repo_name+"_"+args.mode)

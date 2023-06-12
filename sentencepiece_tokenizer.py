@@ -27,7 +27,6 @@ def fetch_tokenizer(tokenizer_type : str = TOKENIZER_TYPE,
                 vocab_file = f"{path_to_tokenizer}.model",
                 model_max_length = MODEL_MAX_LENGTH
                 )
-    tokenizer.add_special_tokens(special_tokens_dict)
     return tokenizer
     
 def _tokenize_inputs(examples : dict,

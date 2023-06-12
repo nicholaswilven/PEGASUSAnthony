@@ -1,6 +1,12 @@
 import re
 import unicodedata
 from sentencepiece_tokenizer import fetch_tokenizer
+import os
+
+# Load Environment Variables from .env
+from dotenv import load_dotenv
+load_dotenv()
+MODEL_MAX_LENGTH = int(os.getenv("MODEL_MAX_LENGTH"))
 
 def remove_news_headline(text,delim):
     # Helper function to remove news headline (for example: JAKARTA, liputan6.com -- )

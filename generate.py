@@ -6,7 +6,7 @@ import json
 import pandas as pd
 from rouge_score import rouge_scorer
 
-from cleaning import process_input_eval
+from cleaning import process_input_eval, text_cleaning
 from parse_records import get_dataset, get_dataset_partitions_tf
 from transformers import TFPegasusForConditionalGeneration
 from model import get_config
@@ -31,9 +31,11 @@ tpu_strategy = tf.distribute.TPUStrategy(tpu)
 prefix_dir = f"gs://{GCS_BUCKET_NAME}/data_new"
 filelist = [pd.read_parquet(os.path.join(prefix_dir, f)) for f in FINETUNE_DATA_LIST]
 df = pd.concat(filelist)
+tokenizer = fetch_tokenizer()
 
 with tpu_strategy.scope():
     model = TFPegasusForConditionalGeneration(get_config(VOCAB_SIZE))
+    #model.build(input_shape = {"input_ids":[128, 512],"decoder_input_ids":[128,256]})
     model.load_weights(LOAD_CKPT_PATH)
 
 scorer = rouge_scorer.RougeScorer(['rouge1'])
@@ -70,7 +72,8 @@ def abs_summary(input_text : str = "sampel artikel.",
                             #encoder_repetition_penalty = 2,
                             #diversity_penalty = 0.1
                             )
-
+    model.push_to_hub("thonyyy/pegasus_ID_base")
+    #model.save("tf_model.h5")
     summary = tokenizer.batch_decode(x, skip_special_tokens=True)
 
     result = {}

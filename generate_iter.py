@@ -31,14 +31,16 @@ tpu_strategy = tf.distribute.TPUStrategy(tpu)
 prefix_dir = f"gs://{GCS_BUCKET_NAME}/data_new"
 filelist = [pd.read_parquet(os.path.join(prefix_dir, f)) for f in FINETUNE_DATA_LIST]
 df = pd.concat(filelist)
+tokenizer = fetch_tokenizer()
 
 with tpu_strategy.scope():
     model = TFPegasusForConditionalGeneration(get_config(VOCAB_SIZE))
+    model.build(input_shape = {"input_ids":[128, 512],"decoder_input_ids":[128,256]})
     model.load_weights(LOAD_CKPT_PATH)
 
 scorer = rouge_scorer.RougeScorer(['rouge1'])
 
-for idx in range(len(df)):
+for idx in range(14000,len(df)):
     input_text = df.iloc[idx]['input']
     t = process_input_eval(input_text)
     with tpu_strategy.scope():
