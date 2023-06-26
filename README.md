@@ -12,6 +12,7 @@ Pretrain :
 Finetune : 
 1. [Indosum](https://paperswithcode.com/dataset/indosum)
 2. [Liputan6](https://paperswithcode.com/dataset/liputan6)
+3. [xlsum](https://huggingface.co/datasets/csebuetnlp/xlsum)
 
 ## Infrastructure setup
 1. Create TPU VM on GCP (TF version 2.12.0, preferable v3-8, free access from [TRC](https://sites.research.google/trc/about/) program)
@@ -42,4 +43,6 @@ Finetune :
 ## Deploy mini showcase using FastAPI
 1. Specify model checkpoint path and vocab_size on .env and model hyperparams on model.py
 2. bash uvicorn app:app
+
+3. 
  
