@@ -112,10 +112,5 @@ def abs_summary(input_text : str = "sampel artikel.", num_beams:int = num_beams)
     
     respond = {}
     respond['article'] = input_text
-    summary_list = []
-    for summary in result:
-        obj = {}
-        obj['summary'] = summary
-        summary_list.append(obj)
-    respond['result'] = summary_list
+    respond['result'] = result
     return respond

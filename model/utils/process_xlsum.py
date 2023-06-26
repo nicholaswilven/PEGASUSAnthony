@@ -1,6 +1,6 @@
 import os
-from utils.convert_to_records import convert_ds_to_records
-from utils.cleaning import text_cleaning
+from .convert_to_records import convert_ds_to_records
+from .cleaning import text_cleaning
 from datasets import load_dataset,concatenate_datasets
 
 def pb(examples):
