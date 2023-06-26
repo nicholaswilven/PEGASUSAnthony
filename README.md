@@ -27,28 +27,28 @@ The structure of this project can be seen in the tree diagram below.
 .
 ├── LICENSE
 ├── README.md
-├── __init__.py
 ├── app.py
-├── generate
-│   ├── demo.py
+├── model
 │   ├── evaluate.py
-│   └── iter.py
+│   ├── generate_demo.py
+│   ├── generate_iter.py
+│   ├── trainer.py
+│   └── utils
+│       ├── cleaning.py
+│       ├── convert_to_records.py
+│       ├── gap_sentence_generation.py
+│       ├── model_config.py
+│       ├── parse_records.py
+│       ├── process_xlsum.py
+│       └── sentencepiece_tokenizer.py
+├── notebook
+│   ├── demo_pegasus.ipynb
+│   └── preprocessing.ipynb
 ├── requirements.txt
 ├── script.sh
 ├── setup.py
 ├── tpu-test.py
-├── train_tokenizer.py
-├── trainer.py
-├── utils
-│   ├── __init__.py
-│   ├── __init__.pyc
-│   ├── cleaning.py
-│   ├── convert_to_records.py
-│   ├── gap_sentence_generation.py
-│   ├── model_config.py
-│   ├── parse_records.py
-│   └── sentencepiece_tokenizer.py
-└── xlsum_script.py
+└── train_tokenizer.py
 ```
 
 ### Environment Variables
