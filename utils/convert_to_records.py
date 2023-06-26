@@ -111,7 +111,7 @@ def convert_ds_to_records(dataset,
                           TFRecord_folder_name : str,
                           mode : str = "finetune",
                           sample_per_file : int = SAMPLE_PER_FILE,
-                          out_dir : str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER_NAME}",
+                          out_dir : str = f"gs://{GCS_BUCKET_NAME}/records/",
                           start_from : int = 0,
                           num_proc : int = 96):
     """ Runnable python function to convert parquet file to tfrecord files via hf datasets, benefits from multiprocessing. Only for pretrain dataset with columns ['text']
@@ -125,12 +125,12 @@ def convert_ds_to_records(dataset,
     # Load parquet file as datasets, combine into one
     if mode == "pretrain":
         # Apply gap sentence generation
-        tokenizer = fetch_tokenizer()
         dataset = dataset.map(_E_GSG,
                               batched = True,
                               remove_columns = ["text"],
                               num_proc = num_proc)
     # Tokenize dataset
+    tokenizer = fetch_tokenizer()
     tokenized_dataset = dataset.map(lambda x : _tokenize_inputs(x, tokenizer = tokenizer),
                                               batched = True,
                                               remove_columns = ["input"],
@@ -200,6 +200,11 @@ def convert_oscar_to_records(TFRecord_folder_name : str,
         print(f"Printing file {idx} from {num_files}")
         writer = tf.data.experimental.TFRecordWriter(os.path.join(out_dir,TFRecord_folder_name,f'pretrain_{idx}.tfrecord'))
         temp_ds = tokenized_dataset.shard(num_shards=num_files,index = idx)
+        
+        print(np.shape(temp_ds['input_ids']))
+        print(np.shape(temp_ds['attention_mask']))
+        print(np.shape(temp_ds['labels']))
+        
         tf_dataset = tf.data.Dataset.from_tensor_slices((
                 temp_ds['input_ids'],
                 temp_ds['attention_mask'],

@@ -1,7 +1,8 @@
 import re
 import unicodedata
-from sentencepiece_tokenizer import fetch_tokenizer
 import os
+
+from .sentencepiece_tokenizer import fetch_tokenizer
 
 # Load Environment Variables from .env
 from dotenv import load_dotenv

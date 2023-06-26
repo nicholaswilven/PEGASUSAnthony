@@ -5,12 +5,12 @@ import os
 import json
 import pandas as pd
 from rouge_score import rouge_scorer
-
-from cleaning import process_input_eval
-from parse_records import get_dataset, get_dataset_partitions_tf
 from transformers import TFPegasusForConditionalGeneration
-from model import get_config
-from sentencepiece_tokenizer import fetch_tokenizer
+
+from utils.cleaning import process_input_eval, text_cleaning
+from utils.parse_records import get_dataset, get_dataset_partitions_tf
+from utils.model_config import get_config
+from utils.sentencepiece_tokenizer import fetch_tokenizer
 
 # Load Environment Variables from .env
 from dotenv import load_dotenv
@@ -34,13 +34,27 @@ tokenizer = fetch_tokenizer()
 
 with tpu_strategy.scope():
     model = TFPegasusForConditionalGeneration(get_config(VOCAB_SIZE))
-    model.build(input_shape = {"input_ids":[128, 512],"decoder_input_ids":[128,256]})
     model.load_weights(LOAD_CKPT_PATH)
 
 scorer = rouge_scorer.RougeScorer(['rouge1'])
 
-for idx in range(14000,len(df)):
-    input_text = df.iloc[idx]['input']
+def abs_summary(input_text : str = "sampel artikel.",
+                idx : int = None,
+                num_beams : int = 8):
+    """ Sumamrize article (or from index dataset) using model specified in env. Called by FastAPI
+    Args:
+        input_text = article to summarize
+        idx = index dataset to summarize
+    Output:
+        result: Dictionary for 
+            input_text: article to summarize
+            gold: human written summary, only for summary from index dataset
+            summary_list:
+                summary : model generated summary
+                rouge1_f1 : ROUGE1 F1 score with gold, only for summary from index dataset
+    """
+    if idx != None:
+        input_text = df.iloc[idx]['input']
     t = process_input_eval(input_text)
     with tpu_strategy.scope():
         x = model.generate(**t,
@@ -57,12 +71,24 @@ for idx in range(14000,len(df)):
                             #diversity_penalty = 0.1
                             )
     summary = tokenizer.batch_decode(x, skip_special_tokens=True)
-    for sum in summary:
-        s = scorer.score(sum, text_cleaning(df.iloc[idx]['labels']))['rouge1'].fmeasure
-        if s > 0.2:
-            print('index:',idx)
-            print("Article:",input_text)
-            print("gold:",df.iloc[idx]['labels'])
-            print("summary:",sum)
-            print("ROUGE 1 F1:",s)
-            print('------------')
+
+    result = {}
+    result['input_text'] = input_text
+    if idx != None:
+        gold = text_cleaning(df.iloc[idx]['labels'])
+        result['gold'] = gold
+        summary_list = []
+        for sum in summary:
+            obj = {}
+            obj['rouge1_f1'] = scorer.score(sum, gold)['rouge1'].fmeasure
+            obj['summary'] = sum
+            summary_list.append(obj)
+        result['result'] = summary_list
+    else:
+        summary_list = []
+        for sum in summary:
+            obj = {}
+            obj['summary'] = sum
+            summary_list.append(obj)
+        result['result'] = summary_list
+    return result

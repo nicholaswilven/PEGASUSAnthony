@@ -1,10 +1,16 @@
 from transformers import PegasusConfig
+import os
 
-def get_config(vocab_size, small=False, base=True, large=False):
+# Load Environment Variables from .env
+from dotenv import load_dotenv
+load_dotenv()
+VOCAB_SIZE = int(os.getenv("VOCAB_SIZE"))
+
+def get_config(vocab_size = VOCAB_SIZE, mode = "base"):
     # Control model hyperparameters to config here
     configuration = PegasusConfig()
     configuration.vocab_size = vocab_size
-    if small:
+    if mode == "small":
         configuration.d_model = 256
         configuration.dropout = 0.2
         configuration.decoder_attention_heads = 8
@@ -13,7 +19,7 @@ def get_config(vocab_size, small=False, base=True, large=False):
         configuration.encoder_attention_heads = 8
         configuration.encoder_layers = 8
         configuration.encoder_ffn_dim = 2048
-    elif base:
+    elif mode == "base":
         configuration.d_model = 512
         configuration.dropout = 0.15
         configuration.decoder_attention_heads = 8
@@ -22,7 +28,7 @@ def get_config(vocab_size, small=False, base=True, large=False):
         configuration.encoder_attention_heads = 8
         configuration.encoder_layers = 12
         configuration.encoder_ffn_dim = 3072
-    elif large:
+    elif mode == "large":
         configuration.d_model = 1024
         configuration.dropout = 0.1
         configuration.decoder_attention_heads = 16

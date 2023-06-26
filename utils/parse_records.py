@@ -6,10 +6,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
-TFRECORD_FOLDER_NAME = os.getenv("TFRECORD_FOLDER_NAME")
 MODEL_MAX_LENGTH = int(os.getenv("MODEL_MAX_LENGTH"))
 MAX_SUMMARY_LENGTH = int(os.getenv("MAX_SUMMARY_LENGTH"))
-PRETRAIN_NUM_FILES = int(os.getenv("PRETRAIN_NUM_FILES"))
 
 def parse_tfr_element(element,
                       MODEL_MAX_LENGTH : int = MODEL_MAX_LENGTH,
@@ -33,15 +31,15 @@ def parse_tfr_element(element,
     #get our feature and convert str to tensor
     feature1 = tf.squeeze(tf.reshape(tf.io.decode_raw(input_ids, out_type=tf.int32) ,shape=(1,MODEL_MAX_LENGTH+3))[:,3:])
     feature2 = tf.squeeze(tf.reshape(tf.io.decode_raw(attention_mask, out_type=tf.int32) ,shape=[1,MODEL_MAX_LENGTH+3])[:,3:])
-
     label = tf.squeeze(tf.reshape(tf.io.decode_raw(labels, out_type=tf.int32) ,shape=[1,MAX_SUMMARY_LENGTH+3])[:,3:]) # uint16 barely enough for 64k vocabs
     return {'input_ids' :feature1,'attention_mask':feature2, 'labels':label} # 'decoder_input_ids':feature3
 
 
-def get_dataset(tfr_dir: str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER_NAME}",
+def get_dataset(TFRecord_folder_name : str,
+                num_files : int,
+                tfr_dir: str = f"gs://{GCS_BUCKET_NAME}/records/",
                 pattern: str = "{}_{}.tfrecord",
                 mode: str = "pretrain",
-                num_files: int  = PRETRAIN_NUM_FILES,
                 files: list = None):
     """Get dataset from list of tfrecord filename
     Args:
@@ -53,12 +51,7 @@ def get_dataset(tfr_dir: str = f"gs://{GCS_BUCKET_NAME}/records/{TFRECORD_FOLDER
         tf.dataset from tfrecord files"""
 
     if files == None:
-        if num_files == None:
-            if mode == "pretrain":
-                num_files = PRETRAIN_NUM_FILES
-            elif mode == "finetune":
-                num_files = FINETUNE_NUM_FILES
-        files = [os.path.join(tfr_dir, pattern.format(mode,idx)) for idx in range(num_files)]
+        files = [os.path.join(tfr_dir, TFRecord_folder_name, pattern.format(mode,idx)) for idx in range(num_files)]
     
     # Create the dataset
     dataset = tf.data.TFRecordDataset(files)
