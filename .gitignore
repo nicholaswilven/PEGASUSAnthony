@@ -8,4 +8,4 @@ logs
 tensorboard_logs
 script_log
 .sh
-.py
+script.sh

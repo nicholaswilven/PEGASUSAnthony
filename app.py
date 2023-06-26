@@ -1,4 +1,4 @@
-from generate import abs_summary
+from generate_demo import abs_summary,generate_from_index
 from pydantic import BaseModel
 from fastapi import FastAPI
 app = FastAPI()
@@ -6,11 +6,11 @@ app = FastAPI()
 class Article(BaseModel):
     content: str
 
-@app.get("/api/sum") 
-async def get_menu_rec(idx : int):
-    return abs_summary(input_text = None,idx = idx)
+@app.get("/api/summarize") 
+async def get_menu_rec(dataset_name: str, idx : int):
+    return generate_from_index(dataset_name, idx = idx)
 
-@app.post("/api/sum")
+@app.post("/api/summarize")
 async def get_menu_rec(art : Article):
     art_dict = art.dict()
     return abs_summary(input_text = art_dict['content'])

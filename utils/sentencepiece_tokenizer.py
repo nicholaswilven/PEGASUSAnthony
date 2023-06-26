@@ -56,7 +56,7 @@ def _tokenize_inputs(examples : dict,
             tokenized_inputs = tokenizer(
                 input_string,
                 return_tensors = "tf",
-                padding = True,
+                padding = 'max_length',
                 max_length = MODEL_MAX_LENGTH,
                 truncation = True
                 )
@@ -66,14 +66,14 @@ def _tokenize_inputs(examples : dict,
             tokenized_labels = tokenizer(
                 labels_string,
                 return_tensors = "tf",
-                padding = True,
+                padding = 'max_length',
                 max_length = MAX_SUMMARY_LENGTH,
                 truncation = True
                 ).input_ids
         else:
             tokenized_inputs = tokenizer(
                 input_string,
-                padding = True,
+                padding = 'max_length',
                 max_length = MODEL_MAX_LENGTH,
                 truncation = True
                 )
@@ -82,7 +82,7 @@ def _tokenize_inputs(examples : dict,
 
             tokenized_labels = tokenizer(
                 labels_string,
-                padding = True,
+                padding = 'max_length',
                 max_length = MAX_SUMMARY_LENGTH,
                 truncation = True
                 ).input_ids

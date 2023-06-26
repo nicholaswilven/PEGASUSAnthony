@@ -26,7 +26,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--exp_name", help = "experiment name, for checkpoint name", default = datetime.now().strftime("%Y-%m-%d_%H:%M:%S"),
                     type=str)
 parser.add_argument("--mode", help = "pretrain or finetune", default = "pretrain", type = str)
-parser.add_argument("--num_files", help = "number of files used in training", type = int)
 parser.add_argument("--batch_size", help = "batch_size training", default = 128, type = int)
 parser.add_argument("--epochs", help = "epochs training", default = 2, type = int)
 parser.add_argument("--vocab_size", help = "vocab size model and tokenizer", default = VOCAB_SIZE, type = int)
@@ -50,8 +49,8 @@ if args.mode == "pretrain":
     dataset = get_dataset(files = f).prefetch(AUTO)
 elif args.mode == "finetune":
     f1 = [tfr_dir.format("indosum_32k",args.mode,idx) for idx in range(4)]
-    f2 = [tfr_dir.format("liputan6_32k",args.mode,idx) for idx in range(144)]
-    f3 = [tfr_dir.format("oscar_32k_trunc",args.mode,idx) for idx in range(35)]
+    f2 = [tfr_dir.format("liputan6_32k",args.mode,idx) for idx in range(11)]
+    f3 = [tfr_dir.format("xlsum_32k",args.mode,idx) for idx in range(2)]
     f = f1+f2+f3
     # Shuffle filename list for better randomness
     random.shuffle(f)

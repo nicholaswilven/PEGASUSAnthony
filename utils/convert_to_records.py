@@ -200,11 +200,6 @@ def convert_oscar_to_records(TFRecord_folder_name : str,
         print(f"Printing file {idx} from {num_files}")
         writer = tf.data.experimental.TFRecordWriter(os.path.join(out_dir,TFRecord_folder_name,f'pretrain_{idx}.tfrecord'))
         temp_ds = tokenized_dataset.shard(num_shards=num_files,index = idx)
-        
-        print(np.shape(temp_ds['input_ids']))
-        print(np.shape(temp_ds['attention_mask']))
-        print(np.shape(temp_ds['labels']))
-        
         tf_dataset = tf.data.Dataset.from_tensor_slices((
                 temp_ds['input_ids'],
                 temp_ds['attention_mask'],

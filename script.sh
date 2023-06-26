@@ -1,2 +1,2 @@
 #!/bin/sh
-python3 -u trainer.py --exp_name=full --load_ckpt_path=gs://pegasusanthony_ext/checkpoints/base_oscar_gogogo_ulg/pretrain-weights-40-2.349-0.266 1> script_log/full_result.txt 2> script_log/full_result_error.txt
+python3 -u trainer.py --exp_name=full --mode=finetune --load_ckpt_path=gs://pegasusanthony_ext/checkpoints/base_oscar_gogogo_ulg/pretrain-weights-40-2.349-0.266 1> script_log/full_result.txt 2> script_log/full_result_error.txt

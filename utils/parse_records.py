@@ -35,8 +35,8 @@ def parse_tfr_element(element,
     return {'input_ids' :feature1,'attention_mask':feature2, 'labels':label} # 'decoder_input_ids':feature3
 
 
-def get_dataset(TFRecord_folder_name : str,
-                num_files : int,
+def get_dataset(TFRecord_folder_name : str = None,
+                num_files : int = None,
                 tfr_dir: str = f"gs://{GCS_BUCKET_NAME}/records/",
                 pattern: str = "{}_{}.tfrecord",
                 mode: str = "pretrain",
