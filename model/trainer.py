@@ -17,7 +17,7 @@ from utils.model_config import get_config
 from dotenv import load_dotenv
 load_dotenv()
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
-REPO_NAME = os.getenv("SAVE_TO_REPO")
+REPO_NAME = os.getenv("REPO_NAME")
 VOCAB_SIZE = int(os.getenv("VOCAB_SIZE"))
 
 # Parse sys args
@@ -114,7 +114,6 @@ with tpu_strategy.scope():
         callbacks = model_callback
         )
     
-    if args.push_to_hub:
-        model.push_to_hub(args.repo_name+"_"+args.mode)
-        tokenizer = fetch_tokenizer()
-        tokenizer.push_to_hub(args.repo_name+"_"+args.mode)
+    model.push_to_hub(args.repo_name+"_"+args.mode)
+    tokenizer = fetch_tokenizer()
+    tokenizer.push_to_hub(args.repo_name+"_"+args.mode)

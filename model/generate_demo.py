@@ -4,6 +4,7 @@ print("Tensorflow version " + tf.__version__)
 import os
 import json
 import pandas as pd
+import numpy as np
 from rouge_score import rouge_scorer
 
 from transformers import TFPegasusForConditionalGeneration, PegasusTokenizerFast
@@ -62,7 +63,7 @@ def generate_from_index(dataset_name , idx , num_beams : int = num_beams):
     input_text = tokenizer.decode(row['input_ids'], skip_special_tokens=True)
     label = tokenizer.decode(row['labels'], skip_special_tokens=True)
     with tpu_strategy.scope():
-        x = model.generate(row['input_ids'],
+        x = model.generate(input_ids = row['input_ids'],
                             min_new_tokens = MIN_SUMMARY_LENGTH,
                             max_new_tokens = MAX_SUMMARY_LENGTH,
                             # early_stopping  = True, # want to explore full potential

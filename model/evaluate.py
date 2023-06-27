@@ -4,6 +4,7 @@ print("Tensorflow version " + tf.__version__)
 import os
 import json
 import pandas as pd
+import numpy as np
 from rouge_score import rouge_scorer
 
 from transformers import TFPegasusForConditionalGeneration, PegasusTokenizerFast
@@ -33,11 +34,14 @@ tpu_strategy = tf.distribute.TPUStrategy(tpu)
 AUTO = tf.data.experimental.AUTOTUNE
 tfr_dir = f"gs://{GCS_BUCKET_NAME}"+"/records/{}/{}_{}.tfrecord"
 
-dataset_name, num_files = "indosum_32k_test",1
-#dataset_name, num_files = "liputan6_32k_test",1
-#dataset_name, num_files =  "xlsum_32k_test",1
-f = [tfr_dir.format(dataset_name,"finetune",idx) for idx in range(num_files)]
+# Parse sys args
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset_name", help = "dataset name", default = "indosum_32k_test", type = str)
+parser.add_argument("--num_files", help = "num files", default = 1, type = int)
+args = parser.parse_args()
 
+f = [tfr_dir.format(args.dataset_name,"finetune",idx) for idx in range(args.num_files)]
 
 dataset = get_dataset(files = f).prefetch(AUTO)
 dataset_np = list(dataset.as_numpy_iterator())
@@ -64,7 +68,7 @@ for idx in range(len(dataset_np)):
     input_text = tokenizer.decode(row['input_ids'], skip_special_tokens=True)
     label = tokenizer.decode(row['labels'], skip_special_tokens=True)
     with tpu_strategy.scope():
-        x = model.generate(row['input_ids'],
+        x = model.generate(input_ids = tf.convert_to_tensor([row['input_ids']],dtype=tf.int32),
                             min_new_tokens = MIN_SUMMARY_LENGTH,
                             max_new_tokens = MAX_SUMMARY_LENGTH,
                             # early_stopping  = True, # want to explore full potential
@@ -94,9 +98,9 @@ df_finish = pd.DataFrame(data = {'article' : article,
                                 'rougeL' : scoreL})
 
 # Write complete result to csv
-df_finish.to_csv(f'{dataset_name}.csv',index=False, sep = "|")
+df_finish.to_csv(f'{args.dataset_name}.csv',index=False, sep = "|")
 
 # Write final score to txt
-with open(f'{dataset_name}.txt','w') as f:
+with open(f'{args.dataset_name}_rouge.txt','w') as f:
     f.write('rouge1 / rouge2 / rougeL \n')
     f.write(f'{np.mean(score1)} / {np.mean(score2)} / {np.mean(scoreL)} ')
