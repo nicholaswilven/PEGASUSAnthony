@@ -98,6 +98,6 @@ REPO_NAME =
 2. Start server by `uvicorn app:app`
 
 ## Special Thanks
-
+Research supported with Cloud TPUs from Google’s TPU Research Cloud (TRC)
 
  
