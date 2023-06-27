@@ -12,17 +12,18 @@ load_dotenv()
 GSG_RATE = float(os.getenv("GSG_RATE"))
 RETURN_MASK_RATE = float(os.getenv("RETURN_MASK_RATE"))
 
-def _E_GSG(examples, GSG_RATE = GSG_RATE, RETURN_MASK_RATE = RETURN_MASK_RATE):
-    """Function to prepare features for Extractive Gap Sentece Generation task, compatible with hf datasets mapping
+def _E_GSG(examples, GSG_RATE : float = GSG_RATE, RETURN_MASK_RATE : float = RETURN_MASK_RATE):
+    """Function to prepare features for Extractive Gap Sentece Generation task, compatible with huggingface dataset mapping batch=True
     Args:
-        examples: A dictionary of list articles (example for one article input)
-            text : ["Pegasus is mythical . It is pure white . it names the model ."])        
-        GGS_RATE: Percentage of sentence masked in input using top ROUGE F1 score
-        RETURN_MASK_RATE: Choosen sentence are not masked in input, set 0 for regular GSG
+        examples = A dictionary of list articles (example for one article input)
+            text = ["Pegasus is mythical . It is pure white . it names the model ."])        
+        GGS_RATE = Percentage of sentence masked in input using top ROUGE F1 score
+        RETURN_MASK_RATE=  Choosen sentence are not masked in input, set 0 for regular GSG
     Outputs:
-        result :  A dictionary of list masked article (input) and list pseudo-summary (labels)
-            input : ["Pegasus is mythical . <mask_1> it names the model ."]
-            labels : ["It is pure white . </s>"] for <mask_1>
+        result =  A dictionary of list masked article (input) and list pseudo-summary (labels)
+            input = ["Pegasus is mythical . <mask_1> it names the model ."]
+            labels = ["It is pure white . </s>"] for <mask_1>
+    Refer to PEGASUS paper : Principal Ind-Oriq
     """
 
     result = {}

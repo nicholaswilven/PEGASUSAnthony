@@ -14,7 +14,9 @@ def parse_tfr_element(element,
                       MAX_SUMMARY_LENGTH : int = MAX_SUMMARY_LENGTH):
     """Parse TFRecords element, structure same as serializing
     Args:
-        element: TFRecords row
+        element = TFRecords row
+        MODEL_MAX_LENGTH = Maximum tokens padding for input_ids
+        MAX_SUMMARY_LENGTH = Maximum tokens padding for labels
     Outputs: Dictionary of data for one article
     """
     data = {
@@ -32,7 +34,7 @@ def parse_tfr_element(element,
     feature1 = tf.squeeze(tf.reshape(tf.io.decode_raw(input_ids, out_type=tf.int32) ,shape=(1,MODEL_MAX_LENGTH+3))[:,3:])
     feature2 = tf.squeeze(tf.reshape(tf.io.decode_raw(attention_mask, out_type=tf.int32) ,shape=[1,MODEL_MAX_LENGTH+3])[:,3:])
     label = tf.squeeze(tf.reshape(tf.io.decode_raw(labels, out_type=tf.int32) ,shape=[1,MAX_SUMMARY_LENGTH+3])[:,3:]) # uint16 barely enough for 64k vocabs
-    return {'input_ids' :feature1,'attention_mask':feature2, 'labels':label} # 'decoder_input_ids':feature3
+    return {'input_ids' :feature1,'attention_mask':feature2, 'labels':label} 
 
 
 def get_dataset(TFRecord_folder_name : str = None,
@@ -43,10 +45,12 @@ def get_dataset(TFRecord_folder_name : str = None,
                 files: list = None):
     """Get dataset from list of tfrecord filename
     Args:
-        tfr_dir: path to directory tfrecords in google storage bucket
-        pattern: string format for tfrecord filename
-        num_files: number of files, used in filename pattern, defaults to environment if not specified
-        files : folder path to TFRecord, overwrites above previous when used
+        TFRecord_folder_name = folder name to store final TFRecords file
+        num_files: number of files, used in filename pattern
+        tfr_dir = path for TFRecord folder in GCS bucket
+        pattern = string format for tfrecord filename
+        mode = type of dataset, used in filename pattern
+        files = folder path to TFRecord, overwrites others params usage when used
     Output:
         tf.dataset from tfrecord files"""
 
@@ -65,9 +69,9 @@ def get_dataset_partitions_tf(dataset,
                               shuffle_size : int = 10000):
     """Split dataset to train and validation dataset
     Args:
-        dataset: TFDataset object
-        val_size: number of rows for validation dataset, preferable multiple of BATCH_SIZE
-        shuffle_size : buffer size for tf.dataset.shuffle function
+        dataset = TFDataset object
+        val_size = number of rows for validation dataset, preferable multiple of BATCH_SIZE
+        shuffle_size = buffer size for tf.dataset.shuffle function
     Output:
         train TFDataset object and validation TFDataset"""
     dataset = dataset.shuffle(shuffle_size*100, reshuffle_each_iteration=False) # bigger buffer size since data not batched

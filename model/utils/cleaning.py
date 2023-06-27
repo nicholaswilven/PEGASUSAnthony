@@ -9,15 +9,15 @@ from dotenv import load_dotenv
 load_dotenv()
 MODEL_MAX_LENGTH = int(os.getenv("MODEL_MAX_LENGTH"))
 
-def remove_news_headline(text,delim):
+def remove_news_headline(text : str, delim : str):
     # Helper function to remove news headline (for example: JAKARTA, liputan6.com -- )
     x = text.split(delim)
-    if len(x)>1: # buang yang bukan konten
+    if len(x)>1: # dump the title
         return " ".join(x[1:])
     else:
         return x[0]
 
-def text_cleaning(input_string, is_news = True):
+def text_cleaning(input_string : str, is_news : bool = True):
     # Main function to clean text, removes link, bullet point, non ASCII char, news headline, parantheses,
     # punctuation except "," and ".", numbers with dot (enumerating), extra whitespaces, too short sentences.
     lowercase = input_string.lower()
@@ -48,7 +48,7 @@ def process_input_eval(text : str, tokenizer = fetch_tokenizer()):
               )
 
 def cleaning_oscar(examples):
-    # hf datasets mapping function to clean OSCAR corpus dataset
+    # huggingface dataset mapping function to clean OSCAR corpus dataset
     # 1. Takes only confident indonesian sentences (language label is "id")
     # 2. Applies above text_cleaning function
     # 3. Truncate articles to 500 words

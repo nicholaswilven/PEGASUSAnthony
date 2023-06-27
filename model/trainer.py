@@ -114,6 +114,6 @@ with tpu_strategy.scope():
         callbacks = model_callback
         )
     
-    model.push_to_hub(args.repo_name+"_"+args.mode)
+    model.push_to_hub(args.repo_name)
     tokenizer = fetch_tokenizer()
-    tokenizer.push_to_hub(args.repo_name+"_"+args.mode)
+    tokenizer.push_to_hub(args.repo_name)

@@ -34,19 +34,20 @@ def _tokenize_inputs(examples : dict,
                      return_tf : bool = False,
                      MODEL_MAX_LENGTH : int = MODEL_MAX_LENGTH,
                      MAX_SUMMARY_LENGTH : int = MAX_SUMMARY_LENGTH):
-        """Function to tokenize inputs, compatible with hf datasets mapping
-        Arguments:
-        tokenizer: PegasusTokenizer
-          examples : A dictionary with 2 keys
-            input : ["Pegasus is mythical . <mask_1> it names the model ."]
-            labels  :  ["It is pure white . </s>"] for <mask_1>
-            MODEL_MAX_LENGTH : Maximum tokens in input
-            MAX_SUMMARY_LENGTH : Maximum tokens in output
-        Returns:
-            examples:  A dictionary with 4 keys 
-              input_ids : tokenized masked input ["Pegasus is mythical . <mask_1> it names the model ."]
-              labels : tokenized labels ["It is pure white . </s>"]
-              attention_mask : attention mask for input_ids (to avoid attention on mask and padding)
+        """Function to tokenize inputs
+        Args:
+            tokenizer = PegasusTokenizer
+            examples = A dictionary with 2 keys
+                input = ["Pegasus is mythical . <mask_1> it names the model ."]
+                labels = ["It is pure white . </s>"] for <mask_1>
+            return_tf = return tf.tensors if True, Python List (compatible to huggingface dataset mapping batch=True) if False
+            MODEL_MAX_LENGTH = Maximum tokens padding for input_ids
+            MAX_SUMMARY_LENGTH = Maximum tokens padding for labels
+        Outputs:
+            examples =  A dictionary with 4 keys 
+              input_ids = tokenized masked input ["Pegasus is mythical . <mask_1> it names the model ."]
+              labels = tokenized labels ["It is pure white . </s>"]
+              attention_mask = attention mask for input_ids (to avoid attention on padding)
         """
 
         input_string = examples['input']

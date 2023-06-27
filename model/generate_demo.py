@@ -22,8 +22,8 @@ MAX_SUMMARY_LENGTH = int(os.getenv("MAX_SUMMARY_LENGTH"))
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
 LOAD_CKPT_PATH = os.getenv("LOAD_CKPT_PATH")
 VOCAB_SIZE = int(os.getenv("VOCAB_SIZE"))
+repo_name = os.getenv("REPO_NAME")
 
-repo_name = "thonyyy/pegasus-indonesian-base_finetune"
 num_beams = 4
 
 # Use TPU!

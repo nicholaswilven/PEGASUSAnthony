@@ -30,9 +30,9 @@ def _bytes_feature(value):
 def serialize_pretrain(feature1, feature2, feature4):
     """Python function for serializing tensor -> string -> byte_list -> features -> string
     Args:
-        feature1: input_ids tensor with shape (sample_size, MODEL_MAX_LENGTH)
-        feature2: attention_mask tensor with shape (sample_size, MODEL_MAX_LENGTH)
-        feature4: labels tensor with shape (sample_size, MAX_SUMMARY_LENGTH)
+        feature1 = input_ids tensor with shape (sample_size, MODEL_MAX_LENGTH)
+        feature2 = attention_mask tensor with shape (sample_size, MODEL_MAX_LENGTH)
+        feature4 = labels tensor with shape (sample_size, MAX_SUMMARY_LENGTH)
     Outputs: serialized string for train.example
     """
 
@@ -59,9 +59,9 @@ def tf_serialize(f0,f1,f3):
 def serialize_examples(dataset, mode = "pretrain"):
     """ Convert dataframe/dict to serialized tf.dataset
     Args: 
-        dataset: dataframe/dict with keys ['input'] for mode = 'pretrain' 
+        dataset = dataframe/dict with keys ['input'] for mode = 'pretrain' 
                     and ['input,'labels'] for mode = 'finetune'
-        tokenizer: PegasusTokenizer object used
+        tokenizer = PegasusTokenizer object used
         mode = 'pretrain' or 'finetune'. Pretrain dataset have gap sentence generation processing
     """
     if mode == "pretrain":
@@ -86,12 +86,13 @@ def convert_df_to_records(df,
                           sample_per_file : int = SAMPLE_PER_FILE,
                           out_dir : str = f"gs://{GCS_BUCKET_NAME}/records/",
                           start_from : int = 0):
-    """ Runnable python function to convert parquet file to tfrecord files 
+    """ Runnable python function to convert dataframe object to tfrecord files
     Args:
-        mode = 'pretrain' or 'finetune'. Specify which dataset to process
-        num_files = number of tfrecord files generated, each ~100MB
-        prefix_dir = path to parquet files (slightly hardcoded)
-        out_dir = path for output TFRecord folder
+        df = dataframe object to convert, must have columns ['input'] for mode = 'pretrain' and ['input,'labels'] for mode = 'finetune'
+        TFRecord_folder_name = folder name to store final TFRecords file
+        mode = 'pretrain' to apply gsg and tokenizing, 'finetune' for tokenizing only
+        sample_per_file = samples per tfrecord files generated, try to aim each ~100MB
+        out_dir = path for TFRecord folder in GCS bucket
         start_from = helper params to continue if process terminated 
     """
     print(f"Total records : {len(df)}")
@@ -114,13 +115,15 @@ def convert_ds_to_records(dataset,
                           out_dir : str = f"gs://{GCS_BUCKET_NAME}/records/",
                           start_from : int = 0,
                           num_proc : int = 96):
-    """ Runnable python function to convert parquet file to tfrecord files via hf datasets, benefits from multiprocessing. Only for pretrain dataset with columns ['text']
+    """ Runnable python function to convert huggingface dataset object to tfrecord files, benefits from multiprocessing.
     Args:
-        out_dir = path for output TFRecord folder
-        prefix_dir = path to parquet files (slightly hardcoded)
-        sample_per_file = number of datapoints in one TFRecord file, each ~100MB
+        dataset = dataset object to convert, must have columns ['input'] for mode = 'pretrain' and ['input,'labels'] for mode = 'finetune'
+        TFRecord_folder_name = folder name to store final TFRecords file
+        mode = 'pretrain' to apply gsg and tokenizing, 'finetune' for tokenizing only
+        sample_per_file = samples per tfrecord files generated, try to aim each ~100MB
+        out_dir = path for TFRecord folder in GCS bucket
         start_from = helper params to continue if process terminated 
-        num_proc = number of CPU cores/ workers available
+        num_proc = number of workers/vCPU cores available to use
     """
     # Load parquet file as datasets, combine into one
     if mode == "pretrain":
@@ -161,18 +164,19 @@ def convert_oscar_to_records(TFRecord_folder_name : str,
                                start_from : int = 0,
                                num_proc : int = 96):
                             
-    """ Runnable python function to convert OSCAR corpus dataset to tfrecord files as pretrain dataset, benefits from multiprocessing.
+    """ Runnable python function to convert OSCAR_2201 dataset to tfrecord files as pretrain dataset, benefits from multiprocessing.
     Args:
-        out_dir = path for output TFRecord folder
-        sample_per_file = number of datapoints in one TFRecord file, each ~100MB
+        TFRecord_folder_name = folder name to store final TFRecords file
+        sample_per_file = samples per tfrecord files generated, try to aim each ~100MB
+        out_dir = path for TFRecord folder in GCS bucket
         start_from = helper params to continue if process terminated 
-        num_proc = number of CPU cores/ workers available
+        num_proc = number of workers/vCPU cores available to use
     """
     dataset = load_dataset("oscar-corpus/OSCAR-2201",
                            use_auth_token = True,
                            language = "id",
                            split = "train")
-    # Cleaning the dataset
+    # Cleaning the dataset using custom process
     clean_dataset = dataset.map(cleaning_oscar,
                                 batched = True,
                                 remove_columns = ["id","meta"],
