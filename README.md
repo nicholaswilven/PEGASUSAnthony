@@ -1,5 +1,5 @@
 # PEGASUSAnthony
-Thesis Project 
+Model card : [pegasus-indonesian-base_finetune](https://huggingface.co/thonyyy/pegasus-indonesian-base_finetune)
 
 A paper named [“PEGASUS: Pre-training with Extracted Gap-sentences for Abstractive Summarization”](https://arxiv.org/abs/1912.08777) appeared in International Conference on Machine Learning 2020 surprised the AI community by the breakthroughs in the abstractive summarization task. PEGASUS is a deep learning model that uses a transformer encoder-decoder architecture, which takes in a sequence of input tokens and generates a sequence of output tokens. This is particularly useful for summarization, where the goal is to take a long piece of text and generate a shorter summary. Made by the Google AI Research team, the model achieved performance close to the state of the art with remarkably less labeled training data, around 1000 data, compared to previous state of the art models that use tens of thousands of labeled training data.
 
@@ -7,13 +7,13 @@ In this project, I implemented Indonesian PEGASUS model to make abstractive summ
 
 Pretrain : 
 1. [kaggle id news 2017](https://www.kaggle.com/datasets/aashari/indonesian-news-articles-published-at-2017)
-2. [cc_news_id](https://github.com/Wikidepia/indonesian_datasets/tree/master/dump/cc-news)
-3. [OSCAR corpus](https://huggingface.co/datasets/oscar-corpus/OSCAR-2201/viewer/id/train)
+2. [CC_news_id](https://github.com/Wikidepia/indonesian_datasets/tree/master/dump/cc-news)
+3. [OSCAR_2201](https://huggingface.co/datasets/oscar-corpus/OSCAR-2201/viewer/id/train)
 
 Finetune : 
 1. [Indosum](https://paperswithcode.com/dataset/indosum)
 2. [Liputan6](https://paperswithcode.com/dataset/liputan6)
-3. [xlsum](https://huggingface.co/datasets/csebuetnlp/xlsum)
+3. [XLSum](https://huggingface.co/datasets/csebuetnlp/xlsum)
 
 ## ⚡️ Getting Started
 ### Clone Repository
@@ -83,8 +83,8 @@ REPO_NAME =
 3. python tpu-test.py (Check TPU)
 
 ### Prepare training dataset
-0. Preprocess on all dataset notebook (except OSCAR)
-1. Upload to GCS bucket as parquet file (see notebooks)
+0. Preprocess all dataset on notebook (except OSCAR, XLSum)
+1. Upload to GCS bucket as parquet file
 2. Dump all text into one .txt file
 3. Train sentencepiece tokenizer using train_tokenizer.py
 4. Convert all training data to TFRecords using convert_to_records.py
@@ -96,5 +96,8 @@ REPO_NAME =
 ### Deploy mini showcase using FastAPI
 1. Load model on demo.py (use checkpoint or huggingface repo)
 2. Start server by `uvicorn app:app`
+
+## Special Thanks
+
 
  
