@@ -46,13 +46,6 @@ f = [tfr_dir.format(args.dataset_name,"finetune",idx) for idx in range(args.num_
 dataset = get_dataset(files = f).prefetch(AUTO)
 dataset_np = list(dataset.as_numpy_iterator())
 
-article = []
-gold = []
-summary = []
-score1 = []
-score2 = []
-scoreL = []
-
 scorer = rouge_scorer.RougeScorer(['rouge1','rouge2','rougeL'])
 with tpu_strategy.scope():
     if repo_name:
@@ -62,6 +55,11 @@ with tpu_strategy.scope():
         model = TFPegasusForConditionalGeneration(get_config(VOCAB_SIZE))
         model.load_weights(LOAD_CKPT_PATH)
         tokenizer = fetch_tokenizer()
+
+print(f'{args.dataset_name}: Generating {len(dataset_np)} samples.')
+sep = '|'
+print(f'article{sep}gold{sep}summary{sep}rouge1{sep}rouge2{sep}rougeL')
+
 
 for idx in range(len(dataset_np)):
     row = dataset_np[idx]
@@ -82,25 +80,8 @@ for idx in range(len(dataset_np)):
                             #diversity_penalty = 0.1
                             )
     result = tokenizer.batch_decode(x, skip_special_tokens=True)[0]
+    score1 = scorer.score(result, label)['rouge1'].fmeasure
+    score2 = scorer.score(result, label)['rouge2'].fmeasure
+    scoreL = scorer.score(result, label)['rougeL'].fmeasure
+    print(f'{input_text}{sep}{label}{sep}{result}{sep}{score1}{sep}{score2}{sep}{scoreL}')
     
-    article.append(input_text)
-    gold.append(label)
-    summary.append(result)
-    score1.append(scorer.score(result, label)['rouge1'].fmeasure)
-    score2.append(scorer.score(result, label)['rouge2'].fmeasure)
-    scoreL.append(scorer.score(result, label)['rougeL'].fmeasure)
-
-df_finish = pd.DataFrame(data = {'article' : article,
-                                'gold' : gold,
-                                'summary' : summary,
-                                'rouge1' : score1,
-                                'rouge2' : score2,
-                                'rougeL' : scoreL})
-
-# Write complete result to csv
-df_finish.to_csv(f'{args.dataset_name}.csv',index=False, sep = "|")
-
-# Write final score to txt
-with open(f'{args.dataset_name}_rouge.txt','w') as f:
-    f.write('rouge1 / rouge2 / rougeL \n')
-    f.write(f'{np.mean(score1)} / {np.mean(score2)} / {np.mean(scoreL)} ')

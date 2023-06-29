@@ -56,6 +56,7 @@ with tpu_strategy.scope():
         model.load_weights(LOAD_CKPT_PATH)
         tokenizer = fetch_tokenizer()
 
+print(f'{args.dataset_name}: Generating {len(dataset_np)} samples.')
 for idx in range(len(dataset_np)):
     row = dataset_np[idx]
     input_text = tokenizer.decode(row['input_ids'], skip_special_tokens=True)
