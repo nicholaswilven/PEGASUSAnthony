@@ -7,5 +7,3 @@ __pycache__
 logs
 tensorboard_logs
 script_log
-.sh
-script.sh
