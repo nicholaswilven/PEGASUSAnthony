@@ -60,13 +60,17 @@ print(f'{args.dataset_name}: Generating {len(dataset_np)} samples.')
 sep = '|'
 print(f'article{sep}gold{sep}summary{sep}rouge1{sep}rouge2{sep}rougeL')
 
-
-for idx in range(len(dataset_np)):
-    row = dataset_np[idx]
-    input_text = tokenizer.decode(row['input_ids'], skip_special_tokens=True)
-    label = tokenizer.decode(row['labels'], skip_special_tokens=True)
+batch_size = 16
+from math import ceil
+num_batch = ceil(len(dataset_np)/batch_size)
+for idx in range(num_batch):
+    row = dataset_np[idx*batch_size:(idx+1)*batch_size]
+    input_ids = [r['input_ids'] for r in row]
+    labels = [r['labels'] for r in row]
+    input_text = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
+    label = tokenizer.batch_decode(labels, skip_special_tokens=True)
     with tpu_strategy.scope():
-        x = model.generate(input_ids = tf.convert_to_tensor([row['input_ids']],dtype=tf.int32),
+        x = model.generate(input_ids = tf.convert_to_tensor(input_ids,dtype=tf.int32),
                             min_new_tokens = MIN_SUMMARY_LENGTH,
                             max_new_tokens = MAX_SUMMARY_LENGTH,
                             # early_stopping  = True, # want to explore full potential
@@ -79,9 +83,11 @@ for idx in range(len(dataset_np)):
                             #encoder_repetition_penalty = 2,
                             #diversity_penalty = 0.1
                             )
-    result = tokenizer.batch_decode(x, skip_special_tokens=True)[0]
-    score1 = scorer.score(result, label)['rouge1'].fmeasure
-    score2 = scorer.score(result, label)['rouge2'].fmeasure
-    scoreL = scorer.score(result, label)['rougeL'].fmeasure
-    print(f'{input_text}{sep}{label}{sep}{result}{sep}{score1}{sep}{score2}{sep}{scoreL}')
+    result = tokenizer.batch_decode(x, skip_special_tokens=True)
+    for i in range(batch_size):
+        res = result[i]
+        score1 = scorer.score(res, label[i])['rouge1'].fmeasure
+        score2 = scorer.score(res, label[i])['rouge2'].fmeasure
+        scoreL = scorer.score(res, label[i])['rougeL'].fmeasure
+        print(f'{input_text[i]}{sep}{label[i]}{sep}{res}{sep}{score1}{sep}{score2}{sep}{scoreL}')
     
