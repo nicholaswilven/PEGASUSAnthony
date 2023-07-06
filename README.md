@@ -14,6 +14,14 @@ Finetune :
 1. [Indosum](https://paperswithcode.com/dataset/indosum)
 2. [Liputan6](https://paperswithcode.com/dataset/liputan6)
 3. [XLSum](https://huggingface.co/datasets/csebuetnlp/xlsum)
+   
+## Performance
+
+| datasets | rouge-1 | rouge-2 | rouge-L |
+| ---- | ---- | ---- | ---- |
+| Indosum | 52.43 | 41.23 | 48.18 |
+| Liputan6 | 38.27 | 20.22 | 31.26 |
+| XLSum | 26.97 | 9.99 | 21.70 |
 
 ## ⚡️ Getting Started
 ### Clone Repository
