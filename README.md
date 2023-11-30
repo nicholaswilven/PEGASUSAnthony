@@ -17,11 +17,11 @@ Finetune :
    
 ## Performance
 
-| datasets | rouge-1 | rouge-2 | rouge-L |
-| ---- | ---- | ---- | ---- |
-| Indosum | 52.43 | 41.23 | 48.18 |
-| Liputan6 | 38.27 | 20.22 | 31.26 |
-| XLSum | 26.97 | 9.99 | 21.70 |
+| datasets | rouge-1 | rouge-2 | rouge-L | BERTScore |
+| ---- | ---- | ---- | ---- | --- |
+| Indosum | 52.43 | 41.23 | 48.18 | 80.68 | 
+| Liputan6 | 38.27 | 20.22 | 31.26 | 76.31 | 
+| XLSum | 26.97 | 9.99 | 21.70 | 73.62|
 
 ## ⚡️ Getting Started
 ### Clone Repository
